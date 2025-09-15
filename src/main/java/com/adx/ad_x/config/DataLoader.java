@@ -20,7 +20,7 @@ public class DataLoader implements CommandLineRunner {
             admin.setFirstName("System");
             admin.setLastName("Administrator");
             admin.setEmail("admin@adx.com");
-            admin.setPassword("admin123");
+            admin.setPassword("admin123"); // Plain text password
             admin.setRole("ADMIN");
 
             userRepository.save(admin);

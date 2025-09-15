@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>AD-X - Login</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <div class="card fade-in" style="max-width: 400px; margin: 50px auto;">
+        <h2 style="text-align: center; margin-bottom: 30px; color: #667eea;">
+            <i class="bi bi-box-arrow-in-right"></i> Login to AD-X
+        </h2>
+
+        <!-- Messages -->
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+        <div th:if="${message}" class="alert alert-info" th:text="${message}"></div>
+
+        <form action="/custom-login" method="post">
+            <div class="form-group">
+                <label for="email"><i class="bi bi-envelope"></i> Email:</label>
+                <input type="email" id="email" name="email" required placeholder="Enter your email">
+            </div>
+
+            <div class="form-group">
+                <label for="password"><i class="bi bi-lock"></i> Password:</label>
+                <input type="password" id="password" name="password" required placeholder="Enter your password">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                <i class="bi bi-box-arrow-in-right"></i> Login
+            </button>
+        </form>
+
+        <p style="text-align: center; margin-top: 20px;">
+            Don't have an account? <a href="/register">Register here</a>
+        </p>
+
+        <p style="text-align: center; margin-top: 10px; font-size: 14px; color: #666;">
+            Admin? Use: admin@adx.com / admin123
+        </p>
+    </div>
+</div>
+</body>
+</html>

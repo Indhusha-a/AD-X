@@ -33,7 +33,15 @@ public class UserService {
             existingUser.setFirstName(userDetails.getFirstName());
             existingUser.setLastName(userDetails.getLastName());
             existingUser.setEmail(userDetails.getEmail());
-            existingUser.setRole(userDetails.getRole());
+
+            // REMOVED: existingUser.setRole(userDetails.getRole());
+            // We don't update role during profile edits to avoid null errors
+
+            // Only update password if provided (optional)
+            if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
+                existingUser.setPassword(userDetails.getPassword());
+            }
+
             return userRepository.save(existingUser);
         }
         return null;
