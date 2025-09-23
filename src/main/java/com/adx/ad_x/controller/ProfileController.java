@@ -30,7 +30,7 @@ public class ProfileController {
         return "profile-edit";
     }
 
-    // Process profile update - FIXED VERSION
+    // Process profile update
     @PostMapping("/update")
     public String processUpdate(@RequestParam String firstName,
                                 @RequestParam String lastName,
