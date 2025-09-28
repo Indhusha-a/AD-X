@@ -59,7 +59,7 @@ public class AuthController {
         return "login";
     }
 
-    // Show admin login form
+    // Show admin login form - FIXED MAPPING
     @GetMapping("/admin/login")
     public String showAdminLoginForm(@RequestParam(value = "error", required = false) String error,
                                      @RequestParam(value = "logout", required = false) String logout,
@@ -71,7 +71,7 @@ public class AuthController {
             model.addAttribute("message", "You have been logged out successfully.");
         }
         model.addAttribute("pageTitle", "AD-X - Admin Login");
-        return "admin-login";
+        return "admin-login"; // Make sure this matches your template filename
     }
 
     // Process login form (for both users and admins)
@@ -86,7 +86,7 @@ public class AuthController {
         if (user.isPresent() && user.get().getPassword().equals(password)) {
             session.setAttribute("user", user.get());
 
-            // Redirect based on role - UPDATED WITH BUYER/SELLER REDIRECTS
+            // Redirect based on role
             if (user.get().getRole().equals("ADMIN")) {
                 return "redirect:/admin/dashboard";
             } else if (user.get().getRole().equals("SELLER")) {

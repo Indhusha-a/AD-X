@@ -21,14 +21,14 @@ public class AdminController {
     // Check if user is admin
     private boolean isAdmin(HttpSession session) {
         User user = (User) session.getAttribute("user");
-        return user != null && user.getRole().equals("ADMIN");
+        return user != null && "ADMIN".equals(user.getRole());
     }
 
     // Admin dashboard
     @GetMapping("/dashboard")
     public String adminDashboard(HttpSession session, Model model) {
         if (!isAdmin(session)) {
-            return "redirect:/login";
+            return "redirect:/admin/login";
         }
 
         List<User> users = userService.getAllUsers();
@@ -41,7 +41,7 @@ public class AdminController {
     @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable Long id, HttpSession session, Model model) {
         if (!isAdmin(session)) {
-            return "redirect:/login";
+            return "redirect:/admin/login";
         }
 
         Optional<User> user = userService.getUserById(id);
@@ -59,7 +59,7 @@ public class AdminController {
                               @ModelAttribute User userDetails,
                               HttpSession session) {
         if (!isAdmin(session)) {
-            return "redirect:/login";
+            return "redirect:/admin/login";
         }
 
         userService.updateUser(id, userDetails);
@@ -70,7 +70,7 @@ public class AdminController {
     @GetMapping("/delete/{id}")
     public String deleteUser(@PathVariable Long id, HttpSession session) {
         if (!isAdmin(session)) {
-            return "redirect:/login";
+            return "redirect:/admin/login";
         }
 
         userService.deleteUser(id);
