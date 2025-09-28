@@ -44,7 +44,7 @@ public class AuthController {
         return "login";
     }
 
-    // Show login form
+    // Show user login form
     @GetMapping("/login")
     public String showLoginForm(@RequestParam(value = "error", required = false) String error,
                                 @RequestParam(value = "logout", required = false) String logout,
@@ -55,11 +55,26 @@ public class AuthController {
         if (logout != null) {
             model.addAttribute("message", "You have been logged out successfully.");
         }
-        model.addAttribute("pageTitle", "AD-X - Login");
+        model.addAttribute("pageTitle", "AD-X - User Login");
         return "login";
     }
 
-    // Process login form
+    // Show admin login form
+    @GetMapping("/admin/login")
+    public String showAdminLoginForm(@RequestParam(value = "error", required = false) String error,
+                                     @RequestParam(value = "logout", required = false) String logout,
+                                     Model model) {
+        if (error != null) {
+            model.addAttribute("error", "Invalid administrator credentials");
+        }
+        if (logout != null) {
+            model.addAttribute("message", "You have been logged out successfully.");
+        }
+        model.addAttribute("pageTitle", "AD-X - Admin Login");
+        return "admin-login";
+    }
+
+    // Process login form (for both users and admins)
     @PostMapping("/custom-login")
     public String processLogin(@RequestParam String email,
                                @RequestParam String password,
@@ -71,13 +86,23 @@ public class AuthController {
         if (user.isPresent() && user.get().getPassword().equals(password)) {
             session.setAttribute("user", user.get());
 
+            // Redirect based on role - UPDATED WITH BUYER/SELLER REDIRECTS
             if (user.get().getRole().equals("ADMIN")) {
                 return "redirect:/admin/dashboard";
+            } else if (user.get().getRole().equals("SELLER")) {
+                return "redirect:/seller/dashboard";
+            } else if (user.get().getRole().equals("BUYER")) {
+                return "redirect:/buyer/dashboard";
             } else {
                 return "redirect:/dashboard";
             }
         } else {
-            return "redirect:/login?error=true";
+            // Check if the login attempt was from admin portal
+            if (email.contains("admin") || user.map(u -> "ADMIN".equals(u.getRole())).orElse(false)) {
+                return "redirect:/admin/login?error=true";
+            } else {
+                return "redirect:/login?error=true";
+            }
         }
     }
 

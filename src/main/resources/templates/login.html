@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>AD-X - Login</title>
+    <title>AD-X - User Login</title>
     <link href="/css/style.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
 </head>
@@ -9,7 +9,7 @@
 <div class="container">
     <div class="card fade-in" style="max-width: 400px; margin: 50px auto;">
         <h2 style="text-align: center; margin-bottom: 30px; color: #667eea;">
-            <i class="bi bi-box-arrow-in-right"></i> Login to AD-X
+            <i class="bi bi-person-circle"></i> User Login
         </h2>
 
         <!-- Messages -->
@@ -29,7 +29,7 @@
             </div>
 
             <button type="submit" class="btn btn-primary" style="width: 100%;">
-                <i class="bi bi-box-arrow-in-right"></i> Login
+                <i class="bi bi-box-arrow-in-right"></i> Login as User
             </button>
         </form>
 
@@ -37,9 +37,14 @@
             Don't have an account? <a href="/register">Register here</a>
         </p>
 
-        <p style="text-align: center; margin-top: 10px; font-size: 14px; color: #666;">
-            Admin? Use: admin@adx.com / admin123
-        </p>
+        <div style="text-align: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+            <small style="color: #666;">
+                Are you an administrator?
+                <a href="/admin/login" style="color: #dc3545;">
+                    <i class="bi bi-shield-check"></i> Admin Login
+                </a>
+            </small>
+        </div>
     </div>
 </div>
 </body>
