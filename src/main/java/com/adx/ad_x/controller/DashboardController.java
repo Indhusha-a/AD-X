@@ -1,13 +1,30 @@
 package com.adx.ad_x.controller;
 
 import com.adx.ad_x.model.User;
+import com.adx.ad_x.service.FavoriteService;
+import com.adx.ad_x.service.OrderService;
+import com.adx.ad_x.service.InquiryService;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Controller
 public class DashboardController {
+
+    @Autowired
+    private FavoriteService favoriteService;
+
+    @Autowired
+    private OrderService orderService;
+
+    @Autowired
+    private InquiryService inquiryService;
 
     @GetMapping("/dashboard")
     public String dashboard(HttpSession session, Model model) {
@@ -43,7 +60,19 @@ public class DashboardController {
             return "redirect:/dashboard"; // Redirect to role-appropriate dashboard
         }
 
+        // Get stats for the buyer
+        Long favoriteCount = favoriteService.getFavoriteCount(user);
+        Long orderCount = orderService.getUserOrderCount(user);
+        Long inquiryCount = inquiryService.getUnreadInquiryCountForBuyer(user);
+
+        // Get recent activity data
+        Map<String, Object> recentActivity = getRecentActivity(user);
+
         model.addAttribute("user", user);
+        model.addAttribute("favoriteCount", favoriteCount);
+        model.addAttribute("orderCount", orderCount);
+        model.addAttribute("inquiryCount", inquiryCount);
+        model.addAttribute("recentActivity", recentActivity);
         model.addAttribute("pageTitle", "AD-X - Buyer Dashboard");
         return "buyer-dashboard";
     }
@@ -81,5 +110,24 @@ public class DashboardController {
         model.addAttribute("user", user);
         model.addAttribute("pageTitle", "AD-X - Dashboard");
         return "dashboard";
+    }
+
+    // Helper method to get recent activity
+    private Map<String, Object> getRecentActivity(User user) {
+        Map<String, Object> activity = new HashMap<>();
+
+        // Get recent orders
+        activity.put("recentOrders", orderService.getUserOrders(user).stream().limit(3).toList());
+
+        // Get recent inquiries
+        activity.put("recentInquiries", inquiryService.getBuyerInquiries(user).stream().limit(3).toList());
+
+        // Check if there's any activity
+        boolean hasActivity = !((List<?>) activity.get("recentOrders")).isEmpty() ||
+                !((List<?>) activity.get("recentInquiries")).isEmpty();
+
+        activity.put("hasActivity", hasActivity);
+
+        return activity;
     }
 }

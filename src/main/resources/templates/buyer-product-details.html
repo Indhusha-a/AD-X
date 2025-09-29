@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle}">AD-X - Product Details</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .product-hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+        }
+
+        .product-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 40px 0;
+        }
+
+        .product-image-large {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            height: 400px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 6rem;
+        }
+
+        .product-info-details {
+            padding: 20px;
+        }
+
+        .product-title-large {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .product-price-large {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+
+        .product-category-large {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 1rem;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .product-description-full {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .seller-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn-large {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .features-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .features-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .features-list li:before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .back-link {
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .back-link:hover {
+            color: #e9ecef;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .product-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn-large {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation Header -->
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/">🚀 AD-X</a>
+        <div class="navbar-nav">
+            <a href="/buyer/browse" class="btn btn-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back to Browse
+            </a>
+            <a href="/buyer/dashboard" class="btn btn-outline-primary me-2">
+                <i class="bi bi-speedometer"></i> Dashboard
+            </a>
+            <a class="btn btn-secondary" href="/logout">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Product Hero Section -->
+<div class="product-hero">
+    <div class="container">
+        <a href="/buyer/browse" class="back-link">
+            <i class="bi bi-arrow-left"></i> Back to All Products
+        </a>
+        <h1 th:text="${product.title}">Product Title</h1>
+        <p th:text="${product.category}">Category</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Success/Error Messages -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <div class="product-container">
+        <!-- Product Image -->
+        <div>
+            <div class="product-image-large">
+                <i class="bi bi-megaphone"></i>
+            </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="product-info-details">
+            <h1 class="product-title-large" th:text="${product.title}">Product Title</h1>
+
+            <div class="product-price-large" th:text="'$' + ${#numbers.formatDecimal(product.price, 1, 2)}">
+                $99.99
+            </div>
+
+            <div class="product-category-large" th:text="${product.category}">
+                Category
+            </div>
+
+            <div class="product-description-full" th:text="${product.description}">
+                Comprehensive description of the advertising service goes here.
+                This includes all the details about what the service offers,
+                benefits, target audience, and any special features.
+            </div>
+
+            <!-- Features List -->
+            <h3>Service Features</h3>
+            <ul class="features-list">
+                <li>Professional advertising design</li>
+                <li>Target audience analysis</li>
+                <li>Performance tracking</li>
+                <li>24/7 customer support</li>
+                <li>Customizable packages</li>
+            </ul>
+
+            <!-- Seller Information -->
+            <div class="seller-info">
+                <h4><i class="bi bi-shop"></i> About the Seller</h4>
+                <p><strong>Business:</strong> <span th:text="${product.seller.firstName + ' ' + product.seller.lastName}">Seller Name</span></p>
+                <p><strong>Contact:</strong> <span th:text="${product.seller.email}">seller@example.com</span></p>
+                <p><strong>Member Since:</strong> Recently Joined</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <form th:action="@{/buyer/favorites/toggle/{id}(id=${product.id})}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-large" th:classappend="${product.favorited} ? 'btn-danger' : 'btn-outline-danger'">
+                        <i class="bi" th:classappend="${product.favorited} ? 'bi-heart-fill' : 'bi-heart'"></i>
+                        <span th:text="${product.favorited} ? 'Remove from Favorites' : 'Add to Favorites'">
+                            Add to Favorites
+                        </span>
+                    </button>
+                </form>
+
+                <!-- Buy Now Button -->
+                <form th:action="@{/buyer/buy/{id}(id=${product.id})}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-success btn-large">
+                        <i class="bi bi-cart-check"></i> Buy Now
+                    </button>
+                </form>
+
+                <a th:href="@{/buyer/contact/{id}(id=${product.id})}" class="btn btn-primary btn-large">
+                    <i class="bi bi-chat-dots"></i> Contact Seller
+                </a>
+            </div>
+
+            <!-- Additional Info -->
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <h4>Additional Information</h4>
+                <p><strong>Service Type:</strong> <span th:text="${product.category}">Digital Marketing</span></p>
+                <p><strong>Delivery Time:</strong> 3-5 business days</p>
+                <p><strong>Revisions:</strong> 2 free revisions included</p>
+                <p><strong>Support:</strong> 30 days post-service support</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <p>🚀 <strong>AD-X Advertising Platform</strong> - Connecting Buyers and Sellers</p>
+        <p>© 2024 AD-X. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        <p>Product Details | Version 1.0.0</p>
+    </div>
+</footer>
+
+<script>
+    // Simple confirmation for actions
+    document.addEventListener('DOMContentLoaded', function() {
+        const buyButtons = document.querySelectorAll('form[action*="/buy/"] button');
+
+        buyButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (!confirm('Are you sure you want to purchase this advertising service?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>
