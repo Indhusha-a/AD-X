@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>AD-X - Inquiry Details</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .inquiry-header {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+        .message-bubble {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            max-width: 80%;
+        }
+        .message-bubble.customer {
+            background: #e7f3ff;
+            border-left: 4px solid #17a2b8;
+            margin-right: auto;
+        }
+        .message-bubble.seller {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            margin-left: auto;
+        }
+        .response-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation Header -->
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/">🚀 AD-X</a>
+        <div class="navbar-nav">
+            <a href="/seller/inquiries" class="btn btn-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back to Inquiries
+            </a>
+            <a href="/seller/dashboard" class="btn btn-outline-primary me-2">
+                <i class="bi bi-speedometer"></i> Dashboard
+            </a>
+            <a class="btn btn-secondary" href="/logout">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Inquiry Header -->
+<div class="inquiry-header">
+    <div class="container">
+        <h1><i class="bi bi-chat-dots"></i> Inquiry Details</h1>
+        <p>Respond to customer inquiries</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card fade-in" style="max-width: 800px; margin: 30px auto;">
+        <!-- Success/Error Messages -->
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <!-- Customer Information -->
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h4><i class="bi bi-person"></i> Customer Information</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <strong>Name:</strong> <span th:text="${inquiry.buyer.firstName + ' ' + inquiry.buyer.lastName}">Customer Name</span>
+                </div>
+                <div>
+                    <strong>Email:</strong> <span th:text="${inquiry.buyer.email}">customer@example.com</span>
+                </div>
+                <div>
+                    <strong>Inquiry Date:</strong> <span th:text="${#temporals.format(inquiry.createdAt, 'MMM dd, yyyy HH:mm')}">Jan 01, 2024 12:00</span>
+                </div>
+                <div>
+                    <strong>Status:</strong>
+                    <span th:if="${inquiry.isRead}" class="badge badge-success">Read</span>
+                    <span th:unless="${inquiry.isRead}" class="badge badge-warning">Unread</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Information -->
+        <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h4><i class="bi bi-box"></i> Product Information</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <strong>Product:</strong> <span th:text="${inquiry.product.title}">Product Title</span>
+                </div>
+                <div>
+                    <strong>Category:</strong> <span th:text="${inquiry.product.category}">Category</span>
+                </div>
+                <div>
+                    <strong>Price:</strong> <span th:text="'$' + ${#numbers.formatDecimal(inquiry.product.price, 1, 2)}">$99.99</span>
+                </div>
+                <div>
+                    <a th:href="@{/buyer/product/{id}(id=${inquiry.product.id})}" class="btn btn-primary btn-sm" target="_blank">
+                        <i class="bi bi-eye"></i> View Product
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Original Message -->
+        <div>
+            <h4><i class="bi bi-chat-text"></i> Customer's Original Message</h4>
+            <div class="message-bubble customer">
+                <p style="margin: 0; white-space: pre-wrap;" th:text="${inquiry.message}">
+                    Original message content...
+                </p>
+                <small class="text-muted" th:text="${#temporals.format(inquiry.createdAt, 'MMM dd, yyyy HH:mm')}">
+                    Jan 01, 2024 12:00
+                </small>
+            </div>
+        </div>
+
+        <!-- Response Form -->
+        <div class="response-form">
+            <h4><i class="bi bi-reply"></i> Send Response</h4>
+            <form th:action="@{/seller/inquiries/respond/{id}(id=${inquiry.id})}" method="post">
+                <div class="form-group">
+                    <label for="response"><i class="bi bi-chat-text"></i> Your Response:</label>
+                    <textarea id="response" name="response" rows="6" class="form-control"
+                              placeholder="Type your response to the customer here..." required></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                    <a href="/seller/inquiries" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Inquiries
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i> Send Response
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Response Tips -->
+        <div style="margin-top: 30px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+            <h5><i class="bi bi-lightbulb"></i> Tips for responding to inquiries:</h5>
+            <ul style="margin-bottom: 0;">
+                <li>Respond within 24 hours for better conversion rates</li>
+                <li>Be professional and address the customer by name</li>
+                <li>Answer all questions clearly and thoroughly</li>
+                <li>Highlight the benefits of your advertising service</li>
+                <li>Include a call-to-action to encourage the next step</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <p>🚀 <strong>AD-X Advertising Platform</strong> - Connecting Buyers and Sellers</p>
+        <p>© 2024 AD-X. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        <p>Inquiry Details | Version 1.0.0</p>
+    </div>
+</footer>
+
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        });
+    });
+</script>
+</body>
+</html>

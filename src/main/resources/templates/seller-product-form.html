@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle}">AD-X - Add Product</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .form-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+        .form-container {
+            max-width: 700px;
+            margin: 30px auto;
+        }
+        .preview-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation Header -->
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/">🚀 AD-X</a>
+        <div class="navbar-nav">
+            <a href="/seller/products" class="btn btn-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back to Products
+            </a>
+            <a href="/seller/dashboard" class="btn btn-outline-primary me-2">
+                <i class="bi bi-speedometer"></i> Dashboard
+            </a>
+            <a class="btn btn-secondary" href="/logout">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Form Header -->
+<div class="form-header">
+    <div class="container">
+        <h1><i class="bi bi-plus-circle"></i> <span th:text="${product.id != null} ? 'Edit Product' : 'Add New Product'">Add Product</span></h1>
+        <p>Create or update your advertising service listing</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card fade-in form-container">
+        <!-- Success/Error Messages -->
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <form th:action="@{/seller/products/save}" method="post" th:object="${product}">
+            <input type="hidden" th:field="*{id}">
+
+            <!-- Product Image Preview -->
+            <div class="preview-image">
+                <i class="bi bi-megaphone"></i>
+            </div>
+
+            <div class="form-group">
+                <label for="title"><i class="bi bi-type"></i> Product Title:</label>
+                <input type="text" class="form-control" id="title" th:field="*{title}"
+                       placeholder="Enter product title (e.g., Social Media Marketing Package)" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description"><i class="bi bi-text-paragraph"></i> Description:</label>
+                <textarea class="form-control" id="description" th:field="*{description}"
+                          rows="4" placeholder="Describe your advertising service in detail..." required></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label for="price"><i class="bi bi-currency-dollar"></i> Price:</label>
+                    <input type="number" class="form-control" id="price" th:field="*{price}"
+                           step="0.01" min="0" placeholder="0.00" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="category"><i class="bi bi-tags"></i> Category:</label>
+                    <select class="form-control" id="category" th:field="*{category}" required>
+                        <option value="">Select Category</option>
+                        <option value="Digital Marketing">Digital Marketing</option>
+                        <option value="Social Media">Social Media</option>
+                        <option value="Print Media">Print Media</option>
+                        <option value="Outdoor Advertising">Outdoor Advertising</option>
+                        <option value="Video Production">Video Production</option>
+                        <option value="Content Creation">Content Creation</option>
+                        <option value="SEO Services">SEO Services</option>
+                        <option value="Email Marketing">Email Marketing</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="imageUrl"><i class="bi bi-image"></i> Image URL (Optional):</label>
+                <input type="url" class="form-control" id="imageUrl" th:field="*{imageUrl}"
+                       placeholder="https://example.com/image.jpg">
+                <small class="text-muted">Leave empty to use default product image</small>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 30px;">
+                <a href="/seller/products" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> <span th:text="${product.id != null} ? 'Update Product' : 'Create Product'">Create Product</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- Tips for Sellers -->
+        <div style="margin-top: 30px; padding: 20px; background: #e7f3ff; border-radius: 8px;">
+            <h5><i class="bi bi-lightbulb"></i> Tips for creating great listings:</h5>
+            <ul style="margin-bottom: 0;">
+                <li>Use clear, descriptive titles that highlight your service</li>
+                <li>Provide detailed descriptions of what buyers will receive</li>
+                <li>Set competitive prices based on market research</li>
+                <li>Choose the most relevant category for better visibility</li>
+                <li>Use high-quality images to showcase your work</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <p>🚀 <strong>AD-X Advertising Platform</strong> - Connecting Buyers and Sellers</p>
+        <p>© 2024 AD-X. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        <p th:text="(${product.id != null} ? 'Edit' : 'Add') + ' Product | Version 1.0.0'">Add Product | Version 1.0.0</p>
+    </div>
+</footer>
+
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        });
+    });
+</script>
+</body>
+</html>

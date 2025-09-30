@@ -77,27 +77,8 @@ public class DashboardController {
         return "buyer-dashboard";
     }
 
-    @GetMapping("/seller/dashboard")
-    public String sellerDashboard(HttpSession session, Model model) {
-        User user = (User) session.getAttribute("user");
-        if (user == null) {
-            return "redirect:/login";
-        }
-
-        // Allow only SELLER role to access seller dashboard
-        if (!"SELLER".equals(user.getRole())) {
-            return "redirect:/dashboard"; // Redirect to role-appropriate dashboard
-        }
-
-        // For now, we'll set productCount to 0 since we don't have ProductService in IAM
-        // This will be updated when we implement the Seller Interface
-        Long productCount = 0L;
-
-        model.addAttribute("user", user);
-        model.addAttribute("productCount", productCount);
-        model.addAttribute("pageTitle", "AD-X - Seller Dashboard");
-        return "seller-dashboard";
-    }
+    // REMOVED: sellerDashboard method - moved to SellerController
+    // @GetMapping("/seller/dashboard") - This is causing the conflict
 
     // Generic dashboard for any role (fallback)
     @GetMapping("/generic-dashboard")

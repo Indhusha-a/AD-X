@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -15,62 +16,76 @@ public class ProductService {
     @Autowired
     private ProductRepository productRepository;
 
+    // Existing methods...
     public List<Product> getAllActiveProducts() {
         return productRepository.findByActiveTrue();
-    }
-
-    public List<Product> getProductsBySeller(User seller) {
-        return productRepository.findBySellerAndActiveTrue(seller);
-    }
-
-    public Optional<Product> getProductById(Long id) {
-        return productRepository.findById(id);
-    }
-
-    public Optional<Product> getProductByIdAndSeller(Long id, User seller) {
-        return productRepository.findByIdAndSeller(id, seller);
-    }
-
-    public Product createProduct(Product product) {
-        return productRepository.save(product);
-    }
-
-    public Product updateProduct(Product product) {
-        return productRepository.save(product);
-    }
-
-    public void deleteProduct(Long id) {
-        Optional<Product> product = productRepository.findById(id);
-        if (product.isPresent()) {
-            Product existingProduct = product.get();
-            existingProduct.setActive(false); // Soft delete
-            productRepository.save(existingProduct);
-        }
-    }
-
-    public List<Product> searchProducts(String query) {
-        return productRepository.findByTitleContainingIgnoreCaseAndActiveTrue(query);
     }
 
     public List<Product> getProductsByCategory(String category) {
         return productRepository.findByCategoryAndActiveTrue(category);
     }
 
-    public List<Product> getProductsByCategories(List<String> categories) {
-        return productRepository.findByCategoryInAndActiveTrue(categories);
+    public List<Product> searchProducts(String query) {
+        return productRepository.findByTitleContainingIgnoreCaseAndActiveTrue(query);
     }
 
-    public List<Product> getProductsByPriceRange(Double minPrice, Double maxPrice) {
-        return productRepository.findByPriceRange(minPrice, maxPrice);
+    public Optional<Product> getProductById(Long id) {
+        return productRepository.findById(id);
+    }
+
+    // Seller-specific methods (Step 5)
+    public List<Product> getProductsBySeller(User seller) {
+        return productRepository.findBySellerAndActiveTrue(seller);
     }
 
     public Long getProductCountBySeller(User seller) {
         return productRepository.countBySeller(seller);
     }
 
-    public List<Product> getFeaturedProducts() {
-        // For now, return first 6 active products
-        List<Product> allProducts = productRepository.findByActiveTrue();
-        return allProducts.stream().limit(6).toList();
+    public Optional<Product> getProductByIdAndSeller(Long productId, User seller) {
+        return productRepository.findByIdAndSeller(productId, seller);
+    }
+
+    public Product createProduct(Product product, User seller) {
+        product.setSeller(seller);
+        product.setActive(true);
+        return productRepository.save(product);
+    }
+
+    public Product updateProduct(Long productId, Product productDetails, User seller) {
+        Optional<Product> productOpt = productRepository.findByIdAndSeller(productId, seller);
+        if (productOpt.isPresent()) {
+            Product product = productOpt.get();
+
+            if (productDetails.getTitle() != null) {
+                product.setTitle(productDetails.getTitle());
+            }
+            if (productDetails.getDescription() != null) {
+                product.setDescription(productDetails.getDescription());
+            }
+            if (productDetails.getPrice() != null) {
+                product.setPrice(productDetails.getPrice());
+            }
+            if (productDetails.getCategory() != null) {
+                product.setCategory(productDetails.getCategory());
+            }
+            if (productDetails.getImageUrl() != null) {
+                product.setImageUrl(productDetails.getImageUrl());
+            }
+
+            return productRepository.save(product);
+        }
+        return null;
+    }
+
+    public boolean deleteProduct(Long productId, User seller) {
+        Optional<Product> productOpt = productRepository.findByIdAndSeller(productId, seller);
+        if (productOpt.isPresent()) {
+            Product product = productOpt.get();
+            product.setActive(false); // Soft delete
+            productRepository.save(product);
+            return true;
+        }
+        return false;
     }
 }

@@ -33,6 +33,10 @@
             border-left-color: #dc3545;
         }
 
+        .stat-card.info {
+            border-left-color: #17a2b8;
+        }
+
         .stat-icon {
             font-size: 2.5rem;
             margin-bottom: 10px;
@@ -42,6 +46,7 @@
         .stat-card.primary .stat-icon { color: #667eea; }
         .stat-card.warning .stat-icon { color: #ffc107; }
         .stat-card.danger .stat-icon { color: #dc3545; }
+        .stat-card.info .stat-icon { color: #17a2b8; }
 
         .quick-actions {
             display: grid;
@@ -59,6 +64,7 @@
             text-decoration: none;
             color: #333;
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .action-btn:hover {
@@ -83,6 +89,42 @@
             text-align: center;
             margin: 20px 0;
         }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-icon {
+            font-size: 1.5rem;
+            margin-right: 15px;
+            color: #28a745;
+        }
+        .activity-content {
+            flex: 1;
+        }
+        .activity-time {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -102,6 +144,10 @@
 </nav>
 
 <div class="container">
+    <!-- Success/Error Messages -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
     <div class="dashboard-header">
         <h1><i class="bi bi-graph-up-arrow"></i> Seller Dashboard</h1>
         <p>Manage your advertising services and grow your business</p>
@@ -115,7 +161,7 @@
                 <div class="stat-icon">
                     <i class="bi bi-box-seam"></i>
                 </div>
-                <h3>0</h3>
+                <h3 th:text="${productCount}">0</h3>
                 <p>Active Listings</p>
             </div>
 
@@ -123,7 +169,7 @@
                 <div class="stat-icon">
                     <i class="bi bi-eye"></i>
                 </div>
-                <h3>0</h3>
+                <h3 th:text="${analyticsSummary.totalViews}">0</h3>
                 <p>Total Views</p>
             </div>
 
@@ -131,7 +177,7 @@
                 <div class="stat-icon">
                     <i class="bi bi-chat-dots"></i>
                 </div>
-                <h3>0</h3>
+                <h3 th:text="${inquiryCount}">0</h3>
                 <p>Customer Inquiries</p>
             </div>
 
@@ -139,22 +185,48 @@
                 <div class="stat-icon">
                     <i class="bi bi-currency-dollar"></i>
                 </div>
-                <h3>$0</h3>
+                <h3 th:text="'$' + ${#numbers.formatDecimal(totalRevenue, 1, 2)}">$0</h3>
                 <p>Total Revenue</p>
+            </div>
+
+            <div class="stat-card info">
+                <div class="stat-icon">
+                    <i class="bi bi-bag-check"></i>
+                </div>
+                <h3 th:text="${orderCount}">0</h3>
+                <p>Total Orders</p>
             </div>
         </div>
     </div>
 
     <!-- Performance Chart -->
     <div class="performance-chart fade-in">
-        <h3><i class="bi bi-trophy"></i> Performance Summary</h3>
-        <p>Your seller profile is new! Start by adding your first advertising service.</p>
-        <div style="height: 100px; display: flex; align-items: end; justify-content: center; gap: 10px; margin: 20px 0;">
-            <div style="background: rgba(255,255,255,0.3); width: 30px; height: 20px; border-radius: 5px 5px 0 0;"></div>
-            <div style="background: rgba(255,255,255,0.5); width: 30px; height: 40px; border-radius: 5px 5px 0 0;"></div>
-            <div style="background: rgba(255,255,255,0.7); width: 30px; height: 60px; border-radius: 5px 5px 0 0;"></div>
-            <div style="background: rgba(255,255,255,0.9); width: 30px; height: 30px; border-radius: 5px 5px 0 0;"></div>
+        <h3><i class="bi bi-trophy"></i> Performance Summary (Last 30 Days)</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin: 20px 0;">
+            <div>
+                <h4 th:text="${analyticsSummary.ordersReceived}">0</h4>
+                <p>Orders</p>
+            </div>
+            <div>
+                <h4 th:text="${analyticsSummary.inquiriesReceived}">0</h4>
+                <p>Inquiries</p>
+            </div>
+            <div>
+                <h4 th:text="${#numbers.formatDecimal(analyticsSummary.conversionRate, 1, 2) + '%'}">0%</h4>
+                <p>Conversion Rate</p>
+            </div>
+            <div>
+                <h4 th:text="'$' + ${#numbers.formatDecimal(analyticsSummary.revenueGenerated, 1, 2)}">$0</h4>
+                <p>Revenue</p>
+            </div>
         </div>
+        <p style="margin-top: 15px; opacity: 0.9;">
+            <i class="bi bi-info-circle"></i>
+            <span th:if="${analyticsSummary.conversionRate > 5}">Excellent performance! Your conversion rate is above average.</span>
+            <span th:if="${analyticsSummary.conversionRate <= 5 and analyticsSummary.conversionRate > 2}">Good performance! Consider optimizing your product pages for better conversion.</span>
+            <span th:if="${analyticsSummary.conversionRate <= 2}">Focus on improving your product descriptions and images to boost conversions.</span>
+            <span th:if="${analyticsSummary.ordersReceived == 0}">Start by adding products and promoting your services to get your first orders!</span>
+        </p>
     </div>
 
     <!-- Quick Actions -->
@@ -174,7 +246,7 @@
                     <i class="bi bi-boxes"></i>
                 </div>
                 <strong>My Products</strong>
-                <small>Manage listings</small>
+                <small th:text="'(' + ${productCount} + ')'">(0)</small>
             </a>
 
             <a href="/seller/inquiries" class="action-btn">
@@ -183,6 +255,15 @@
                 </div>
                 <strong>Inquiries</strong>
                 <small>Customer messages</small>
+                <span th:if="${inquiryCount > 0}" class="notification-badge" th:text="${inquiryCount}"></span>
+            </a>
+
+            <a href="/seller/orders" class="action-btn">
+                <div class="action-icon">
+                    <i class="bi bi-bag-check"></i>
+                </div>
+                <strong>Orders</strong>
+                <small th:text="'(' + ${orderCount} + ')'">(0)</small>
             </a>
 
             <a href="/seller/analytics" class="action-btn">
@@ -192,18 +273,88 @@
                 <strong>Analytics</strong>
                 <small>View performance</small>
             </a>
+
+            <a href="/seller/profile" class="action-btn">
+                <div class="action-icon">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+                <strong>Profile</strong>
+                <small>Business settings</small>
+            </a>
         </div>
     </div>
 
     <!-- Recent Activity -->
     <div class="card fade-in">
         <h3><i class="bi bi-clock-history"></i> Recent Activity</h3>
-        <div style="background: #f8f9fa; padding: 25px; border-radius: 10px; text-align: center;">
+
+        <!-- Recent Orders -->
+        <div th:if="${not recentOrders.empty}">
+            <h4 style="margin-top: 20px; color: #28a745;"><i class="bi bi-bag-check"></i> Recent Orders</h4>
+            <div th:each="order : ${recentOrders}">
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="bi bi-bag-check"
+                           th:classappend="${order.status == 'CANCELLED'} ? 'text-danger' :
+                                          (${order.status == 'PENDING'} ? 'text-warning' : 'text-success')"></i>
+                    </div>
+                    <div class="activity-content">
+                        <strong th:text="'Order #' + ${order.id} + ' - ' + ${order.status}">Order #123 - PENDING</strong>
+                        <p style="margin: 5px 0 0 0; color: #666;">
+                            Total: <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$99.99</span>
+                            | Buyer: <span th:text="${order.buyer.firstName + ' ' + order.buyer.lastName}">Buyer Name</span>
+                        </p>
+                    </div>
+                    <div class="activity-time" th:text="${#temporals.format(order.createdAt, 'MMM dd, HH:mm')}">
+                        Jan 01, 12:00
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Inquiries -->
+        <div th:if="${not recentInquiries.empty}">
+            <h4 style="margin-top: 20px; color: #17a2b8;"><i class="bi bi-chat-dots"></i> Recent Inquiries</h4>
+            <div th:each="inquiry : ${recentInquiries}">
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="bi bi-chat-dots"
+                           th:classappend="${inquiry.isRead} ? 'text-secondary' : 'text-primary'"></i>
+                    </div>
+                    <div class="activity-content">
+                        <strong th:text="'Message from ' + ${inquiry.buyer.firstName}">Message from Buyer</strong>
+                        <p style="margin: 5px 0 0 0; color: #666;" th:text="${inquiry.product.title}">
+                            Product Title
+                        </p>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #888; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                           th:text="${inquiry.message}">
+                            Message preview...
+                        </p>
+                    </div>
+                    <div class="activity-time" th:text="${#temporals.format(inquiry.createdAt, 'MMM dd, HH:mm')}">
+                        Jan 01, 12:00
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- No Activity Message -->
+        <div th:if="${recentOrders.empty and recentInquiries.empty}" style="background: #f8f9fa; padding: 25px; border-radius: 10px; text-align: center;">
             <i class="bi bi-info-circle" style="font-size: 2rem; color: #6c757d; margin-bottom: 15px;"></i>
             <h4 style="color: #6c757d;">No Recent Activity</h4>
             <p style="color: #6c757d;">Add your first product to start seeing activity here!</p>
             <a href="/seller/products/new" class="btn btn-success">
                 <i class="bi bi-plus-circle"></i> Add Your First Product
+            </a>
+        </div>
+
+        <!-- View All Links -->
+        <div th:if="${not recentOrders.empty or not recentInquiries.empty}" style="margin-top: 20px; text-align: center;">
+            <a href="/seller/orders" class="btn btn-outline-primary btn-sm me-2" th:if="${not recentOrders.empty}">
+                <i class="bi bi-bag-check"></i> View All Orders
+            </a>
+            <a href="/seller/inquiries" class="btn btn-outline-info btn-sm" th:if="${not recentInquiries.empty}">
+                <i class="bi bi-chat-dots"></i> View All Inquiries
             </a>
         </div>
     </div>
@@ -214,7 +365,7 @@
         <div class="user-info">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div>
-                    <strong>Business Name:</strong> <span th:text="${user.firstName + ' ' + user.lastName}"></span>
+                    <strong>Business Name:</strong> <span th:text="${profile.businessName}">Business Name</span>
                 </div>
                 <div>
                     <strong>Contact Email:</strong> <span th:text="${user.email}"></span>
@@ -222,19 +373,39 @@
                 <div>
                     <strong>Account Type:</strong>
                     <span class="badge badge-success">Seller</span>
+                    <span th:if="${profile.isVerified}" class="badge badge-primary ml-2">
+                        <i class="bi bi-patch-check"></i> Verified
+                    </span>
                 </div>
                 <div>
-                    <strong>Seller Since:</strong> <span>Today</span>
+                    <strong>Total Revenue:</strong> <span th:text="'$' + ${#numbers.formatDecimal(profile.totalRevenue, 1, 2)}">$0.00</span>
+                </div>
+                <div>
+                    <strong>Total Orders:</strong> <span th:text="${profile.totalOrders}">0</span>
+                </div>
+                <div>
+                    <strong>Response Rate:</strong> <span th:text="${#numbers.formatDecimal(profile.responseRate, 1, 2) + '%'}">0%</span>
+                </div>
+                <div>
+                    <strong>Average Rating:</strong>
+                    <span th:text="${#numbers.formatDecimal(profile.averageRating, 1, 2)}">0.00</span>
+                    <i class="bi bi-star-fill text-warning ml-1"></i>
+                </div>
+                <div>
+                    <strong>Member Since:</strong> <span th:text="${#temporals.format(profile.createdAt, 'MMM yyyy')}">Today</span>
                 </div>
             </div>
         </div>
 
         <div style="text-align: center; margin-top: 25px;">
-            <a href="/profile/edit" class="btn btn-primary">
-                <i class="bi bi-person-gear"></i> Edit Profile
+            <a href="/seller/profile" class="btn btn-primary">
+                <i class="bi bi-person-gear"></i> Manage Profile
             </a>
             <a href="/" class="btn btn-secondary">
                 <i class="bi bi-house"></i> Home
+            </a>
+            <a href="/seller/analytics" class="btn btn-info">
+                <i class="bi bi-graph-up"></i> View Analytics
             </a>
         </div>
     </div>
@@ -248,5 +419,33 @@
         <p>Seller Dashboard | Version 1.0.0</p>
     </div>
 </footer>
+
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        });
+
+        // Add animation to stat cards on load
+        const statCards = document.querySelectorAll('.stat-card');
+        statCards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.transform = 'translateY(0)';
+                card.style.opacity = '1';
+            }, index * 100);
+        });
+
+        // Initialize stat cards with hidden state
+        statCards.forEach(card => {
+            card.style.transform = 'translateY(20px)';
+            card.style.opacity = '0';
+            card.style.transition = 'all 0.5s ease';
+        });
+    });
+</script>
 </body>
 </html>

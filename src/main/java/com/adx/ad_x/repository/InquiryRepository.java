@@ -10,8 +10,11 @@ import java.util.List;
 @Repository
 public interface InquiryRepository extends JpaRepository<Inquiry, Long> {
 
+    // Buyer methods
     List<Inquiry> findByBuyerOrderByCreatedAtDesc(User buyer);
-    List<Inquiry> findBySellerOrderByCreatedAtDesc(User seller);
     Long countByBuyerAndIsReadFalse(User buyer);
+
+    // Seller methods (Step 7)
+    List<Inquiry> findBySellerOrderByCreatedAtDesc(User seller);
     Long countBySellerAndIsReadFalse(User seller);
 }

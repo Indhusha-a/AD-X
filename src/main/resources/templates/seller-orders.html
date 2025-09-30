@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>AD-X - My Orders</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .orders-header {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+        .order-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #ffc107;
+        }
+        .order-card.confirmed { border-left-color: #28a745; }
+        .order-card.cancelled { border-left-color: #dc3545; }
+        .order-status {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d4edda; color: #155724; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #6c757d;
+        }
+        .empty-state i {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        .order-items {
+            margin: 15px 0;
+        }
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .order-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation Header -->
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/">🚀 AD-X</a>
+        <div class="navbar-nav">
+            <a href="/seller/dashboard" class="btn btn-secondary me-2">
+                <i class="bi bi-speedometer"></i> Dashboard
+            </a>
+            <a href="/seller/products" class="btn btn-outline-success me-2">
+                <i class="bi bi-boxes"></i> Products
+            </a>
+            <a class="btn btn-secondary" href="/logout">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Orders Header -->
+<div class="orders-header">
+    <div class="container">
+        <h1><i class="bi bi-bag-check"></i> Order Management</h1>
+        <p>Manage and fulfill customer orders</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Success/Error Messages -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <!-- Orders Statistics -->
+    <div class="card fade-in" th:if="${not orders.empty}">
+        <h3><i class="bi bi-graph-up"></i> Orders Summary</h3>
+        <p>Total Orders: <strong th:text="${orders.size()}"></strong></p>
+        <p>Pending Orders: <strong th:text="${orders.?[status == 'PENDING'].size()}"></strong></p>
+        <p>Confirmed Orders: <strong th:text="${orders.?[status == 'CONFIRMED'].size()}"></strong></p>
+    </div>
+
+    <!-- Orders List -->
+    <div th:if="${not orders.empty}">
+        <div th:each="order : ${orders}" class="order-card fade-in"
+             th:classappend="${order.status == 'CONFIRMED'} ? 'confirmed' : (${order.status == 'CANCELLED'} ? 'cancelled' : '')">
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                <div>
+                    <h4 style="margin: 0;">Order #<span th:text="${order.id}"></span></h4>
+                    <small class="text-muted" th:text="${#temporals.format(order.createdAt, 'MMM dd, yyyy HH:mm')}">
+                        Jan 01, 2024 12:00
+                    </small>
+                    <br>
+                    <small><strong>Buyer:</strong> <span th:text="${order.buyer.firstName + ' ' + order.buyer.lastName}"></span></small>
+                    <br>
+                    <small><strong>Email:</strong> <span th:text="${order.buyer.email}"></span></small>
+                </div>
+                <div>
+                    <span class="order-status"
+                          th:classappend="${order.status == 'CONFIRMED'} ? 'status-confirmed' : (${order.status == 'PENDING'} ? 'status-pending' : 'status-cancelled')"
+                          th:text="${order.status}">
+                        PENDING
+                    </span>
+                </div>
+            </div>
+
+            <div class="order-items">
+                <div th:each="item : ${order.items}" class="order-item">
+                    <div>
+                        <strong th:text="${item.product.title}">Product Title</strong>
+                        <br>
+                        <small class="text-muted" th:text="${item.product.category}">Category</small>
+                    </div>
+                    <div style="text-align: right;">
+                        <strong th:text="'$' + ${#numbers.formatDecimal(item.price, 1, 2)}">$99.99</strong>
+                        <br>
+                        <small class="text-muted">Qty: <span th:text="${item.quantity}">1</span></small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="order-summary">
+                <div>
+                    <strong>Total: <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$99.99</span></strong>
+                </div>
+                <div th:if="${order.status == 'PENDING'}">
+                    <form th:action="@{/seller/orders/update-status/{id}(id=${order.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="status" value="CONFIRMED">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <i class="bi bi-check-circle"></i> Confirm Order
+                        </button>
+                    </form>
+                    <form th:action="@{/seller/orders/update-status/{id}(id=${order.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="status" value="CANCELLED">
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Are you sure you want to cancel this order?')">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${orders.empty}" class="empty-state">
+        <i class="bi bi-bag-check"></i>
+        <h3>No Orders Yet</h3>
+        <p>You haven't received any orders yet.</p>
+        <p>When customers purchase your products, their orders will appear here.</p>
+        <a href="/seller/products" class="btn btn-primary btn-lg mt-3">
+            <i class="bi bi-boxes"></i> Manage Products
+        </a>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <p>🚀 <strong>AD-X Advertising Platform</strong> - Connecting Buyers and Sellers</p>
+        <p>© 2024 AD-X. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        <p>Order Management | Version 1.0.0</p>
+    </div>
+</footer>
+
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        });
+    });
+</script>
+</body>
+</html>

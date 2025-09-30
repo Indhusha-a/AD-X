@@ -31,7 +31,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Count products by seller
     Long countBySeller(User seller);
 
-    // Find product by ID and seller (for security)
+    // Find product by ID and seller (for security) - Step 7
     Optional<Product> findByIdAndSeller(Long id, User seller);
 
     // Find products by multiple categories
