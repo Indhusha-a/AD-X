@@ -30,6 +30,15 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private FavoriteRepository favoriteRepository;
 
+    @Autowired
+    private PaymentRepository paymentRepository;
+
+    @Autowired
+    private PayoutRepository payoutRepository;
+
+    @Autowired
+    private FinancialTransactionRepository financialTransactionRepository;
+
     @Override
     public void run(String... args) throws Exception {
         // Create default admin user if not exists
@@ -202,6 +211,9 @@ public class DataLoader implements CommandLineRunner {
             order1.getItems().add(item1);
             orderRepository.save(order1);
 
+            // Create payment for order1
+            createPaymentTestData(buyer, seller, order1);
+
             // Order 2 - Pending
             Order order2 = new Order();
             order2.setBuyer(buyer);
@@ -221,6 +233,44 @@ public class DataLoader implements CommandLineRunner {
             System.out.println("Sample orders created for testing");
         } catch (Exception e) {
             System.out.println("Error creating sample orders: " + e.getMessage());
+        }
+    }
+
+    private void createPaymentTestData(User buyer, User seller, Order order) {
+        try {
+            // Create completed payment
+            Payment payment = new Payment(order, buyer, order.getTotalAmount(), "CREDIT_CARD");
+            payment.setStatus("COMPLETED");
+            payment.setTransactionId("TXN_" + System.currentTimeMillis());
+            payment.setPaymentGateway("SIMULATED");
+            payment.setPaymentDate(LocalDateTime.now().minusDays(2));
+            payment.setGatewayResponse("Payment processed successfully");
+            payment.calculateCommissionAndEarnings();
+            paymentRepository.save(payment);
+
+            // Link payment to order
+            order.setPayment(payment);
+            orderRepository.save(order);
+
+            // Create financial transaction
+            FinancialTransaction transaction = new FinancialTransaction(
+                    "PAYMENT", order.getTotalAmount(), buyer, "Payment for Order #" + order.getId());
+            transaction.setPayment(payment);
+            financialTransactionRepository.save(transaction);
+
+            // Create payout for seller
+            Payout payout = new Payout(seller, payment.getSellerEarnings(), "BANK_TRANSFER");
+            payout.setStatus("COMPLETED");
+            payout.setPayoutReference("PO_" + System.currentTimeMillis());
+            payout.setProcessedDate(LocalDateTime.now().minusDays(1));
+            payout.setPayoutPeriodStart(LocalDateTime.now().minusDays(7).toLocalDate());
+            payout.setPayoutPeriodEnd(LocalDateTime.now().toLocalDate());
+            payout.calculateNetAmount();
+            payoutRepository.save(payout);
+
+            System.out.println("Payment test data created for Order #" + order.getId());
+        } catch (Exception e) {
+            System.out.println("Error creating payment test data: " + e.getMessage());
         }
     }
 

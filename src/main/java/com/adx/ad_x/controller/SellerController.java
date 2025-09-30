@@ -37,6 +37,12 @@ public class SellerController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private PayoutService payoutService;
+
+    @Autowired
+    private PaymentService paymentService;
+
     // Check if user is seller
     private boolean isSeller(HttpSession session) {
         User user = (User) session.getAttribute("user");
@@ -61,6 +67,9 @@ public class SellerController {
         Long inquiryCount = inquiryService.getUnreadInquiryCountForSeller(seller);
         BigDecimal totalRevenue = orderService.getTotalRevenueBySeller(seller);
 
+        // Get pending earnings
+        BigDecimal pendingEarnings = payoutService.calculatePendingEarnings(seller);
+
         // Get recent activity
         List<Order> recentOrders = orderService.getRecentOrdersBySeller(seller, 5);
         List<Inquiry> recentInquiries = inquiryService.getSellerInquiries(seller).stream().limit(5).toList();
@@ -82,6 +91,7 @@ public class SellerController {
         model.addAttribute("orderCount", orderCount);
         model.addAttribute("inquiryCount", inquiryCount);
         model.addAttribute("totalRevenue", totalRevenue);
+        model.addAttribute("pendingEarnings", pendingEarnings);
         model.addAttribute("recentOrders", recentOrders != null ? recentOrders : new ArrayList<>());
         model.addAttribute("recentInquiries", recentInquiries != null ? recentInquiries : new ArrayList<>());
         model.addAttribute("analyticsSummary", safeAnalytics);
@@ -354,5 +364,14 @@ public class SellerController {
             model.addAttribute("error", "Failed to update profile.");
             return "redirect:/seller/profile";
         }
+    }
+
+    // Earnings Dashboard - NEW: Redirect to payment earnings
+    @GetMapping("/earnings")
+    public String viewEarnings(HttpSession session) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+        return "redirect:/payment/earnings";
     }
 }

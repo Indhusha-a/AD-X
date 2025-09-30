@@ -28,6 +28,9 @@
         .stat-card.info {
             border-left-color: #17a2b8;
         }
+        .stat-card.danger {
+            border-left-color: #dc3545;
+        }
         .stat-icon {
             font-size: 2.5rem;
             margin-bottom: 10px;
@@ -36,6 +39,7 @@
         .stat-card.success .stat-icon { color: #28a745; }
         .stat-card.warning .stat-icon { color: #ffc107; }
         .stat-card.info .stat-icon { color: #17a2b8; }
+        .stat-card.danger .stat-icon { color: #dc3545; }
         .quick-actions {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -141,6 +145,13 @@
                 <h3 th:text="${orderCount} ?: 0">0</h3>
                 <p>Purchases</p>
             </div>
+            <div class="stat-card danger">
+                <div class="stat-icon">
+                    <i class="bi bi-credit-card"></i>
+                </div>
+                <h3 th:text="${paymentCount} ?: 0">0</h3>
+                <p>Payments</p>
+            </div>
         </div>
     </div>
 
@@ -176,6 +187,13 @@
                 <strong>Purchases</strong>
                 <small>Order history</small>
             </a>
+            <a href="/payment/history" class="action-btn">
+                <div class="action-icon">
+                    <i class="bi bi-credit-card"></i>
+                </div>
+                <strong>Payments</strong>
+                <small>Payment history</small>
+            </a>
         </div>
     </div>
 
@@ -195,6 +213,7 @@
                         <strong th:text="'Order #' + ${order.id} + ' - ' + ${order.status}">Order #123 - PENDING</strong>
                         <p style="margin: 5px 0 0 0; color: #666;">
                             Total: <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$99.99</span>
+                            <span th:if="${order.payment}" th:text="' | Paid: ' + ${order.payment.status}"></span>
                         </p>
                     </div>
                     <div class="activity-time" th:text="${#temporals.format(order.createdAt, 'MMM dd, HH:mm')}">
@@ -261,6 +280,9 @@
             </a>
             <a href="/" class="btn btn-secondary">
                 <i class="bi bi-house"></i> Home
+            </a>
+            <a href="/payment/history" class="btn btn-info">
+                <i class="bi bi-credit-card"></i> Payment History
             </a>
         </div>
     </div>

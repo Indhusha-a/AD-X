@@ -37,6 +37,10 @@
             border-left-color: #17a2b8;
         }
 
+        .stat-card.success {
+            border-left-color: #28a745;
+        }
+
         .stat-icon {
             font-size: 2.5rem;
             margin-bottom: 10px;
@@ -47,6 +51,7 @@
         .stat-card.warning .stat-icon { color: #ffc107; }
         .stat-card.danger .stat-icon { color: #dc3545; }
         .stat-card.info .stat-icon { color: #17a2b8; }
+        .stat-card.success .stat-icon { color: #28a745; }
 
         .quick-actions {
             display: grid;
@@ -196,6 +201,14 @@
                 <h3 th:text="${orderCount}">0</h3>
                 <p>Total Orders</p>
             </div>
+
+            <div class="stat-card success">
+                <div class="stat-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <h3 th:text="'$' + ${#numbers.formatDecimal(pendingEarnings, 1, 2)}">$0.00</h3>
+                <p>Pending Earnings</p>
+            </div>
         </div>
     </div>
 
@@ -266,6 +279,14 @@
                 <small th:text="'(' + ${orderCount} + ')'">(0)</small>
             </a>
 
+            <a href="/payment/earnings" class="action-btn">
+                <div class="action-icon">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <strong>Earnings</strong>
+                <small>View payouts</small>
+            </a>
+
             <a href="/seller/analytics" class="action-btn">
                 <div class="action-icon">
                     <i class="bi bi-graph-up"></i>
@@ -303,6 +324,7 @@
                         <p style="margin: 5px 0 0 0; color: #666;">
                             Total: <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$99.99</span>
                             | Buyer: <span th:text="${order.buyer.firstName + ' ' + order.buyer.lastName}">Buyer Name</span>
+                            <span th:if="${order.payment}" th:text="' | Paid: ' + ${order.payment.status}"></span>
                         </p>
                     </div>
                     <div class="activity-time" th:text="${#temporals.format(order.createdAt, 'MMM dd, HH:mm')}">
@@ -356,6 +378,9 @@
             <a href="/seller/inquiries" class="btn btn-outline-info btn-sm" th:if="${not recentInquiries.empty}">
                 <i class="bi bi-chat-dots"></i> View All Inquiries
             </a>
+            <a href="/payment/earnings" class="btn btn-outline-success btn-sm ms-2">
+                <i class="bi bi-cash-coin"></i> View Earnings
+            </a>
         </div>
     </div>
 
@@ -403,6 +428,9 @@
             </a>
             <a href="/" class="btn btn-secondary">
                 <i class="bi bi-house"></i> Home
+            </a>
+            <a href="/payment/earnings" class="btn btn-success">
+                <i class="bi bi-cash-coin"></i> View Earnings
             </a>
             <a href="/seller/analytics" class="btn btn-info">
                 <i class="bi bi-graph-up"></i> View Analytics

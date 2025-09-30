@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>AD-X - Select Payment Method</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .payment-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .payment-method {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .payment-method:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.15);
+        }
+        .payment-method.selected {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+        .payment-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        .payment-method.selected .payment-icon {
+            color: #28a745;
+        }
+        .order-summary {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation Header -->
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/">🚀 AD-X</a>
+        <div class="navbar-nav">
+            <a href="/buyer/dashboard" class="btn btn-outline-primary me-2">
+                <i class="bi bi-speedometer"></i> Dashboard
+            </a>
+            <a class="btn btn-secondary" href="/logout">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Payment Header -->
+<div class="payment-header">
+    <div class="container">
+        <h1><i class="bi bi-credit-card"></i> Complete Your Purchase</h1>
+        <p>Select your preferred payment method</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Order Summary -->
+    <div class="order-summary fade-in">
+        <h3><i class="bi bi-receipt"></i> Order Summary</h3>
+        <div th:if="${order}">
+            <p><strong>Order #:</strong> <span th:text="${order.id}">123</span></p>
+            <p><strong>Total Amount:</strong> <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$299.99</span></p>
+            <p><strong>Items:</strong> <span th:text="${order.items.size()}">1</span> item(s)</p>
+        </div>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="card fade-in">
+        <h3><i class="bi bi-wallet2"></i> Select Payment Method</h3>
+
+        <form th:action="@{/payment/process/{id}(id=${order.id})}" method="post" id="paymentForm">
+            <div class="payment-methods">
+                <div class="payment-method" onclick="selectPaymentMethod('CREDIT_CARD')">
+                    <div class="payment-icon">
+                        <i class="bi bi-credit-card"></i>
+                    </div>
+                    <h4>Credit/Debit Card</h4>
+                    <p>Pay securely with your credit or debit card</p>
+                    <input type="radio" name="paymentMethod" value="CREDIT_CARD" style="display: none;">
+                </div>
+
+                <div class="payment-method" onclick="selectPaymentMethod('PAYPAL')">
+                    <div class="payment-icon">
+                        <i class="bi bi-paypal"></i>
+                    </div>
+                    <h4>PayPal</h4>
+                    <p>Pay with your PayPal account</p>
+                    <input type="radio" name="paymentMethod" value="PAYPAL" style="display: none;">
+                </div>
+
+                <div class="payment-method" onclick="selectPaymentMethod('BANK_TRANSFER')">
+                    <div class="payment-icon">
+                        <i class="bi bi-bank"></i>
+                    </div>
+                    <h4>Bank Transfer</h4>
+                    <p>Transfer funds directly from your bank</p>
+                    <input type="radio" name="paymentMethod" value="BANK_TRANSFER" style="display: none;">
+                </div>
+            </div>
+
+            <!-- Security Notice -->
+            <div style="background: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; border-radius: 5px;">
+                <h5><i class="bi bi-shield-check"></i> Secure Payment</h5>
+                <p style="margin: 0; font-size: 0.9rem;">
+                    Your payment information is encrypted and secure. We never store your full payment details.
+                </p>
+            </div>
+
+            <!-- Submit Button -->
+            <div style="text-align: center; margin-top: 30px;">
+                <button type="submit" id="payButton" class="btn btn-success btn-lg" disabled>
+                    <i class="bi bi-lock"></i> Pay Securely -
+                    <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$299.99</span>
+                </button>
+                <a href="/buyer/purchases" class="btn btn-outline-secondary btn-lg ms-3">
+                    <i class="bi bi-arrow-left"></i> Back to Orders
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <p>🚀 <strong>AD-X Advertising Platform</strong> - Secure Payment</p>
+        <p>© 2024 AD-X. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        <p>Payment Processing | Version 1.0.0</p>
+    </div>
+</footer>
+
+<script>
+    let selectedMethod = null;
+
+    function selectPaymentMethod(method) {
+        // Remove selected class from all methods
+        document.querySelectorAll('.payment-method').forEach(el => {
+            el.classList.remove('selected');
+        });
+
+        // Add selected class to clicked method
+        event.currentTarget.classList.add('selected');
+
+        // Set the radio button value
+        selectedMethod = method;
+        document.querySelector('input[name="paymentMethod"][value="' + method + '"]').checked = true;
+
+        // Enable pay button
+        document.getElementById('payButton').disabled = false;
+    }
+
+    // Form submission handler
+    document.getElementById('paymentForm').addEventListener('submit', function(e) {
+        if (!selectedMethod) {
+            e.preventDefault();
+            alert('Please select a payment method');
+            return false;
+        }
+
+        // Show loading state
+        const button = document.getElementById('payButton');
+        button.innerHTML = '<i class="bi bi-arrow-repeat spinner"></i> Processing Payment...';
+        button.disabled = true;
+    });
+</script>
+</body>
+</html>

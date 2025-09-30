@@ -3,17 +3,23 @@ package com.adx.ad_x.service;
 import com.adx.ad_x.model.SellerProfile;
 import com.adx.ad_x.model.User;
 import com.adx.ad_x.repository.SellerProfileRepository;
+import com.adx.ad_x.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class SellerProfileService {
 
     @Autowired
     private SellerProfileRepository sellerProfileRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public SellerProfile getOrCreateSellerProfile(User user) {
         Optional<SellerProfile> existingProfile = sellerProfileRepository.findByUser(user);
@@ -70,5 +76,10 @@ public class SellerProfileService {
 
             sellerProfileRepository.save(profile);
         }
+    }
+
+    // NEW METHOD: Get all sellers
+    public List<User> getAllSellers() {
+        return userRepository.findByRole("SELLER");
     }
 }

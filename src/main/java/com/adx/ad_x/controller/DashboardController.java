@@ -4,6 +4,7 @@ import com.adx.ad_x.model.User;
 import com.adx.ad_x.service.FavoriteService;
 import com.adx.ad_x.service.OrderService;
 import com.adx.ad_x.service.InquiryService;
+import com.adx.ad_x.service.PaymentService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -25,6 +26,9 @@ public class DashboardController {
 
     @Autowired
     private InquiryService inquiryService;
+
+    @Autowired
+    private PaymentService paymentService;
 
     @GetMapping("/dashboard")
     public String dashboard(HttpSession session, Model model) {
@@ -65,6 +69,12 @@ public class DashboardController {
         Long orderCount = orderService.getUserOrderCount(user);
         Long inquiryCount = inquiryService.getUnreadInquiryCountForBuyer(user);
 
+        // Get payment count
+        List<com.adx.ad_x.model.Order> orders = orderService.getUserOrders(user);
+        Long paymentCount = (long) orders.stream()
+                .filter(order -> order.getPayment() != null)
+                .count();
+
         // Get recent activity data
         Map<String, Object> recentActivity = getRecentActivity(user);
 
@@ -72,6 +82,7 @@ public class DashboardController {
         model.addAttribute("favoriteCount", favoriteCount);
         model.addAttribute("orderCount", orderCount);
         model.addAttribute("inquiryCount", inquiryCount);
+        model.addAttribute("paymentCount", paymentCount);
         model.addAttribute("recentActivity", recentActivity);
         model.addAttribute("pageTitle", "AD-X - Buyer Dashboard");
         return "buyer-dashboard";

@@ -110,4 +110,17 @@ public class OrderService {
         }
         return false;
     }
+
+    // NEW METHODS ADDED FOR PAYMENT INTEGRATION
+    public Optional<Order> getOrderById(Long orderId) {
+        return orderRepository.findById(orderId);
+    }
+
+    public Order updateOrder(Order order) {
+        return orderRepository.save(order);
+    }
+
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
+    }
 }

@@ -14,7 +14,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER) // CHANGED TO EAGER
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "buyer_id", nullable = false)
     private User buyer;
 
@@ -27,8 +27,13 @@ public class Order {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER) // CHANGED TO EAGER
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<OrderItem> items = new ArrayList<>();
+
+    // Payment relationship - FIXED: Remove mappedBy since Payment owns the relationship
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
+    private Payment payment;
 
     // Constructors
     public Order() {
@@ -60,8 +65,28 @@ public class Order {
     public List<OrderItem> getItems() { return items; }
     public void setItems(List<OrderItem> items) { this.items = items; }
 
+    public Payment getPayment() { return payment; }
+    public void setPayment(Payment payment) { this.payment = payment; }
+
     public void addItem(OrderItem item) {
         items.add(item);
         item.setOrder(this);
+    }
+
+    // Helper method to check if order is paid
+    public boolean isPaid() {
+        return payment != null && "COMPLETED".equals(payment.getStatus());
+    }
+
+    // Helper method to check if order can be refunded
+    public boolean canBeRefunded() {
+        return isPaid() && !"REFUNDED".equals(payment.getStatus()) &&
+                !"CANCELLED".equals(this.status);
+    }
+
+    // Helper method to check if order belongs to a specific seller
+    public boolean containsSellerProducts(User seller) {
+        return items.stream()
+                .anyMatch(item -> item.getProduct().getSeller().getId().equals(seller.getId()));
     }
 }

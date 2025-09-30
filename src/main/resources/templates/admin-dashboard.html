@@ -33,6 +33,10 @@
       border-left-color: #ffc107;
     }
 
+    .stat-card.info {
+      border-left-color: #17a2b8;
+    }
+
     .stat-icon {
       font-size: 2.5rem;
       margin-bottom: 10px;
@@ -42,6 +46,49 @@
     .stat-card.primary .stat-icon { color: #667eea; }
     .stat-card.success .stat-icon { color: #28a745; }
     .stat-card.warning .stat-icon { color: #ffc107; }
+    .stat-card.info .stat-icon { color: #17a2b8; }
+
+    .quick-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .admin-action-btn {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 20px 15px;
+      text-align: center;
+      text-decoration: none;
+      color: #333;
+      transition: all 0.3s ease;
+    }
+
+    .admin-action-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      text-decoration: none;
+      color: #333;
+    }
+
+    .admin-action-btn.primary:hover { border-color: #667eea; }
+    .admin-action-btn.success:hover { border-color: #28a745; }
+    .admin-action-btn.warning:hover { border-color: #ffc107; }
+    .admin-action-btn.info:hover { border-color: #17a2b8; }
+    .admin-action-btn.danger:hover { border-color: #dc3545; }
+
+    .action-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .admin-action-btn.primary .action-icon { color: #667eea; }
+    .admin-action-btn.success .action-icon { color: #28a745; }
+    .admin-action-btn.warning .action-icon { color: #ffc107; }
+    .admin-action-btn.info .action-icon { color: #17a2b8; }
+    .admin-action-btn.danger .action-icon { color: #dc3545; }
   </style>
 </head>
 <body>
@@ -82,7 +129,7 @@
         <div class="stat-icon">
           <i class="bi bi-cart"></i>
         </div>
-        <h3>0</h3>
+        <h3 th:text="${users.?[role == 'BUYER'].size()}">0</h3>
         <p>Buyers</p>
       </div>
 
@@ -90,7 +137,7 @@
         <div class="stat-icon">
           <i class="bi bi-shop"></i>
         </div>
-        <h3>0</h3>
+        <h3 th:text="${users.?[role == 'SELLER'].size()}">0</h3>
         <p>Sellers</p>
       </div>
 
@@ -98,9 +145,63 @@
         <div class="stat-icon">
           <i class="bi bi-shield-check"></i>
         </div>
-        <h3>1</h3>
+        <h3 th:text="${users.?[role == 'ADMIN'].size()}">1</h3>
         <p>Admins</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="card fade-in">
+    <h3><i class="bi bi-lightning"></i> Quick Actions</h3>
+    <div class="quick-actions-grid">
+      <a href="/admin/financial" class="admin-action-btn success">
+        <div class="action-icon">
+          <i class="bi bi-graph-up"></i>
+        </div>
+        <strong>Financial Dashboard</strong>
+        <small>Revenue & Payments</small>
+      </a>
+
+      <a href="/admin/payments" class="admin-action-btn primary">
+        <div class="action-icon">
+          <i class="bi bi-credit-card"></i>
+        </div>
+        <strong>Payment Management</strong>
+        <small>Manage payments</small>
+      </a>
+
+      <a href="/admin/payouts" class="admin-action-btn warning">
+        <div class="action-icon">
+          <i class="bi bi-cash-coin"></i>
+        </div>
+        <strong>Payout Management</strong>
+        <small>Seller payouts</small>
+      </a>
+
+      <a href="/" class="admin-action-btn info">
+        <div class="action-icon">
+          <i class="bi bi-house"></i>
+        </div>
+        <strong>View Site</strong>
+        <small>Public website</small>
+      </a>
+
+      <a href="/admin/login" class="admin-action-btn">
+        <div class="action-icon">
+          <i class="bi bi-shield-lock"></i>
+        </div>
+        <strong>Admin Login</strong>
+        <small>Login page</small>
+      </a>
+
+      <a href="/logout" class="admin-action-btn danger">
+        <div class="action-icon">
+          <i class="bi bi-box-arrow-right"></i>
+        </div>
+        <strong>Logout</strong>
+        <small>Sign out</small>
+      </a>
     </div>
   </div>
 
@@ -148,19 +249,28 @@
     </div>
   </div>
 
-  <!-- Quick Actions -->
+  <!-- System Information -->
   <div class="card fade-in">
-    <h3><i class="bi bi-lightning"></i> Admin Actions</h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
-      <a href="/" class="btn btn-primary">
-        <i class="bi bi-house"></i> View Site
-      </a>
-      <a href="/admin/login" class="btn btn-secondary">
-        <i class="bi bi-shield-lock"></i> Admin Login
-      </a>
-      <a href="/logout" class="btn btn-danger">
-        <i class="bi bi-box-arrow-right"></i> Logout
-      </a>
+    <h3><i class="bi bi-info-circle"></i> System Information</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div>
+        <strong>Platform Name:</strong> AD-X Advertising Platform
+      </div>
+      <div>
+        <strong>Version:</strong> 1.0.0
+      </div>
+      <div>
+        <strong>Commission Rate:</strong> 10%
+      </div>
+      <div>
+        <strong>Payout Minimum:</strong> $10.00
+      </div>
+      <div>
+        <strong>Default Currency:</strong> USD
+      </div>
+      <div>
+        <strong>Support Email:</strong> support@adx.com
+      </div>
     </div>
   </div>
 </div>
@@ -173,5 +283,30 @@
     <p>Admin Dashboard | Version 1.0.0</p>
   </div>
 </footer>
+
+<script>
+  // Auto-hide alerts after 5 seconds
+  document.addEventListener('DOMContentLoaded', function() {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+      setTimeout(() => {
+        alert.style.display = 'none';
+      }, 5000);
+    });
+
+    // Add animation to stat cards
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach((card, index) => {
+      card.style.transform = 'translateY(20px)';
+      card.style.opacity = '0';
+      card.style.transition = 'all 0.5s ease';
+
+      setTimeout(() => {
+        card.style.transform = 'translateY(0)';
+        card.style.opacity = '1';
+      }, index * 100);
+    });
+  });
+</script>
 </body>
 </html>

@@ -30,6 +30,9 @@ public class BuyerController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private PaymentService paymentService;
+
     // Check if user is buyer
     private boolean isBuyer(HttpSession session) {
         User user = (User) session.getAttribute("user");
@@ -138,7 +141,7 @@ public class BuyerController {
 
         if (product.isPresent() && product.get().getActive()) {
             Order order = orderService.createSingleOrder(buyer, product.get());
-            model.addAttribute("success", "Order placed successfully! Order #" + order.getId());
+            model.addAttribute("success", "Order placed successfully! Please complete payment to confirm your order.");
             return "redirect:/buyer/purchases";
         }
 
@@ -157,8 +160,14 @@ public class BuyerController {
         List<Order> orders = orderService.getUserOrders(buyer);
         Long orderCount = orderService.getUserOrderCount(buyer);
 
+        // Get payment count for dashboard
+        Long paymentCount = (long) orders.stream()
+                .filter(order -> order.getPayment() != null)
+                .count();
+
         model.addAttribute("orders", orders);
         model.addAttribute("orderCount", orderCount);
+        model.addAttribute("paymentCount", paymentCount);
         model.addAttribute("pageTitle", "AD-X - Purchase History");
         return "buyer-purchases";
     }
@@ -182,7 +191,7 @@ public class BuyerController {
         return "redirect:/buyer/purchases";
     }
 
-    // Inquiries page - UPDATED WITH REAL DATA
+    // Inquiries page
     @GetMapping("/inquiries")
     public String viewInquiries(HttpSession session, Model model) {
         if (!isBuyer(session)) {
@@ -241,5 +250,24 @@ public class BuyerController {
         model.addAttribute("error", "Please enter a message.");
         model.addAttribute("product", product.orElse(null));
         return "buyer-contact-seller";
+    }
+
+    // NEW: View payment method selection
+    @GetMapping("/payment/{orderId}")
+    public String selectPaymentMethod(@PathVariable Long orderId, HttpSession session, Model model) {
+        if (!isBuyer(session)) {
+            return "redirect:/login";
+        }
+
+        User buyer = (User) session.getAttribute("user");
+        Optional<Order> order = orderService.getOrderById(orderId);
+
+        if (order.isPresent() && order.get().getBuyer().getId().equals(buyer.getId())) {
+            model.addAttribute("order", order.get());
+            model.addAttribute("pageTitle", "AD-X - Select Payment Method");
+            return "payment-method";
+        }
+
+        return "redirect:/buyer/purchases";
     }
 }
