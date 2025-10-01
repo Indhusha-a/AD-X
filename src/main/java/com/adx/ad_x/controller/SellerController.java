@@ -7,12 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -43,13 +41,16 @@ public class SellerController {
     @Autowired
     private PaymentService paymentService;
 
+    @Autowired
+    private ReviewService reviewService; // New for reviews
+
     // Check if user is seller
     private boolean isSeller(HttpSession session) {
         User user = (User) session.getAttribute("user");
         return user != null && "SELLER".equals(user.getRole());
     }
 
-    // Seller Dashboard - FIXED WITH NULL SAFETY
+    // Seller Dashboard
     @GetMapping("/dashboard")
     public String sellerDashboard(HttpSession session, Model model) {
         if (!isSeller(session)) {
@@ -77,13 +78,9 @@ public class SellerController {
         // Get analytics summary with null safety
         SellerAnalytics analyticsSummary = sellerAnalyticsService.getSellerSummary(seller);
 
-        // Create safe analytics data for template
-        Map<String, Object> safeAnalytics = new HashMap<>();
-        safeAnalytics.put("totalViews", analyticsSummary != null ? analyticsSummary.getTotalViews() : 0);
-        safeAnalytics.put("inquiriesReceived", analyticsSummary != null ? analyticsSummary.getInquiriesReceived() : 0);
-        safeAnalytics.put("ordersReceived", analyticsSummary != null ? analyticsSummary.getOrdersReceived() : 0);
-        safeAnalytics.put("revenueGenerated", analyticsSummary != null ? analyticsSummary.getRevenueGenerated() : BigDecimal.ZERO);
-        safeAnalytics.put("conversionRate", analyticsSummary != null ? analyticsSummary.getConversionRate() : BigDecimal.ZERO);
+        // New: Review analytics and trust score
+        ReviewService.ReviewAnalytics reviewAnalytics = reviewService.getReviewAnalytics(seller);
+        String trustScore = reviewService.getTrustScore(seller);
 
         model.addAttribute("user", seller);
         model.addAttribute("profile", profile);
@@ -92,225 +89,16 @@ public class SellerController {
         model.addAttribute("inquiryCount", inquiryCount);
         model.addAttribute("totalRevenue", totalRevenue);
         model.addAttribute("pendingEarnings", pendingEarnings);
-        model.addAttribute("recentOrders", recentOrders != null ? recentOrders : new ArrayList<>());
-        model.addAttribute("recentInquiries", recentInquiries != null ? recentInquiries : new ArrayList<>());
-        model.addAttribute("analyticsSummary", safeAnalytics);
+        model.addAttribute("recentOrders", recentOrders);
+        model.addAttribute("recentInquiries", recentInquiries);
+        model.addAttribute("analyticsSummary", analyticsSummary);
+        model.addAttribute("reviewAnalytics", reviewAnalytics);
+        model.addAttribute("trustScore", trustScore);
         model.addAttribute("pageTitle", "AD-X - Seller Dashboard");
-
         return "seller-dashboard";
     }
 
-    // Product Management - List Products
-    @GetMapping("/products")
-    public String listProducts(HttpSession session, Model model) {
-        if (!isSeller(session)) {
-            return "redirect:/login";
-        }
-
-        User seller = (User) session.getAttribute("user");
-        List<Product> products = productService.getProductsBySeller(seller);
-
-        model.addAttribute("user", seller); // Add user to model
-        model.addAttribute("products", products);
-        model.addAttribute("pageTitle", "AD-X - My Products");
-        return "seller-products";
-    }
-
-    // Show Add Product Form
-    @GetMapping("/products/new")
-    public String showAddProductForm(HttpSession session, Model model) {
-        if (!isSeller(session)) {
-            return "redirect:/login";
-        }
-
-        User seller = (User) session.getAttribute("user");
-        model.addAttribute("user", seller); // Add user to model
-        model.addAttribute("product", new Product());
-        model.addAttribute("pageTitle", "AD-X - Add Product");
-        return "seller-product-form";
-    }
-
-    // Show Edit Product Form
-    @GetMapping("/products/edit/{id}")
-    public String showEditProductForm(@PathVariable Long id, HttpSession session, Model model) {
-        if (!isSeller(session)) {
-            return "redirect:/login";
-        }
-
-        User seller = (User) session.getAttribute("user");
-        Optional<Product> product = productService.getProductByIdAndSeller(id, seller);
-
-        if (product.isPresent()) {
-            model.addAttribute("user", seller); // Add user to model
-            model.addAttribute("product", product.get());
-            model.addAttribute("pageTitle", "AD-X - Edit Product");
-            return "seller-product-form";
-        }
-
-        model.addAttribute("error", "Product not found or you don't have permission to edit it.");
-        return "redirect:/seller/products";
-    }
-
-    // Save Product (Create or Update)
-    @PostMapping("/products/save")
-    public String saveProduct(@ModelAttribute Product product,
-                              HttpSession session,
-                              Model model) {
-        if (!isSeller(session)) {
-            return "redirect:/login";
-        }
-
-        User seller = (User) session.getAttribute("user");
-
-        try {
-            if (product.getId() == null) {
-                // Create new product
-                productService.createProduct(product, seller);
-                model.addAttribute("success", "Product created successfully!");
-            } else {
-                // Update existing product
-                Product updatedProduct = productService.updateProduct(product.getId(), product, seller);
-                if (updatedProduct != null) {
-                    model.addAttribute("success", "Product updated successfully!");
-                } else {
-                    model.addAttribute("error", "Product not found or you don't have permission to edit it.");
-                }
-            }
-        } catch (Exception e) {
-            model.addAttribute("error", "Error saving product: " + e.getMessage());
-        }
-
-        return "redirect:/seller/products";
-    }
-
-    // Delete Product
-    @PostMapping("/products/delete/{id}")
-    public String deleteProduct(@PathVariable Long id, HttpSession session, Model model) {
-        if (!isSeller(session)) {
-            return "redirect:/login";
-        }
-
-        User seller = (User) session.getAttribute("user");
-        boolean deleted = productService.deleteProduct(id, seller);
-
-        if (deleted) {
-            model.addAttribute("success", "Product deleted successfully!");
-        } else {
-            model.addAttribute("error", "Product not found or you don't have permission to delete it.");
-        }
-
-        return "redirect:/seller/products";
-    }
-
-    // Order Management
-    @GetMapping("/orders")
-    public String listOrders(HttpSession session, Model model) {
-        if (!isSeller(session)) {
-            return "redirect:/login";
-        }
-
-        User seller = (User) session.getAttribute("user");
-        List<Order> orders = orderService.getOrdersBySeller(seller);
-
-        model.addAttribute("user", seller); // Add user to model
-        model.addAttribute("orders", orders);
-        model.addAttribute("pageTitle", "AD-X - My Orders");
-        return "seller-orders";
-    }
-
-    // Update Order Status
-    @PostMapping("/orders/update-status/{id}")
-    public String updateOrderStatus(@PathVariable Long id,
-                                    @RequestParam String status,
-                                    HttpSession session,
-                                    Model model) {
-        if (!isSeller(session)) {
-            return "redirect:/login";
-        }
-
-        User seller = (User) session.getAttribute("user");
-        boolean updated = orderService.updateOrderStatus(id, status, seller);
-
-        if (updated) {
-            model.addAttribute("success", "Order status updated successfully!");
-        } else {
-            model.addAttribute("error", "Order not found or you don't have permission to update it.");
-        }
-
-        return "redirect:/seller/orders";
-    }
-
-    // Inquiry Management
-    @GetMapping("/inquiries")
-    public String listInquiries(HttpSession session, Model model) {
-        if (!isSeller(session)) {
-            return "redirect:/login";
-        }
-
-        User seller = (User) session.getAttribute("user");
-        List<Inquiry> inquiries = inquiryService.getSellerInquiries(seller);
-        Long unreadCount = inquiryService.getUnreadInquiryCountForSeller(seller);
-
-        model.addAttribute("user", seller); // Add user to model
-        model.addAttribute("inquiries", inquiries);
-        model.addAttribute("unreadCount", unreadCount);
-        model.addAttribute("pageTitle", "AD-X - Customer Inquiries");
-        return "seller-inquiries";
-    }
-
-    // View Inquiry Details
-    @GetMapping("/inquiries/{id}")
-    public String viewInquiry(@PathVariable Long id, HttpSession session, Model model) {
-        if (!isSeller(session)) {
-            return "redirect:/login";
-        }
-
-        User seller = (User) session.getAttribute("user");
-        Optional<Inquiry> inquiry = inquiryService.getInquiryById(id);
-
-        if (inquiry.isPresent() && inquiry.get().getSeller().getId().equals(seller.getId())) {
-            // Mark as read when viewing
-            inquiryService.markInquiryAsRead(id, seller);
-
-            model.addAttribute("user", seller); // Add user to model
-            model.addAttribute("inquiry", inquiry.get());
-            model.addAttribute("pageTitle", "AD-X - Inquiry Details");
-            return "seller-inquiry-details";
-        }
-
-        model.addAttribute("error", "Inquiry not found.");
-        return "redirect:/seller/inquiries";
-    }
-
-    // Respond to Inquiry
-    @PostMapping("/inquiries/respond/{id}")
-    public String respondToInquiry(@PathVariable Long id,
-                                   @RequestParam String response,
-                                   HttpSession session,
-                                   Model model) {
-        if (!isSeller(session)) {
-            return "redirect:/login";
-        }
-
-        User seller = (User) session.getAttribute("user");
-
-        if (response == null || response.trim().isEmpty()) {
-            model.addAttribute("error", "Please enter a response message.");
-            return "redirect:/seller/inquiries/" + id;
-        }
-
-        Inquiry responseInquiry = inquiryService.createInquiryResponse(id, response, seller);
-
-        if (responseInquiry != null) {
-            model.addAttribute("success", "Response sent successfully!");
-        } else {
-            model.addAttribute("error", "Failed to send response.");
-        }
-
-        return "redirect:/seller/inquiries/" + id;
-    }
-
-    // Analytics Dashboard
+    // View analytics
     @GetMapping("/analytics")
     public String viewAnalytics(HttpSession session, Model model) {
         if (!isSeller(session)) {
@@ -328,7 +116,7 @@ public class SellerController {
         return "seller-analytics";
     }
 
-    // Profile Management - FIXED: Added user to model
+    // Profile Management
     @GetMapping("/profile")
     public String viewProfile(HttpSession session, Model model) {
         if (!isSeller(session)) {
@@ -338,13 +126,17 @@ public class SellerController {
         User seller = (User) session.getAttribute("user");
         SellerProfile profile = sellerProfileService.getOrCreateSellerProfile(seller);
 
+        // New: Add trust score
+        String trustScore = reviewService.getTrustScore(seller);
+
         model.addAttribute("user", seller); // Add user to model - THIS WAS MISSING
         model.addAttribute("profile", profile);
+        model.addAttribute("trustScore", trustScore);
         model.addAttribute("pageTitle", "AD-X - Seller Profile");
         return "seller-profile";
     }
 
-    // Update Profile - FIXED: Added user to model
+    // Update Profile
     @PostMapping("/profile/update")
     public String updateProfile(@ModelAttribute SellerProfile profileDetails,
                                 HttpSession session,
@@ -366,12 +158,180 @@ public class SellerController {
         }
     }
 
-    // Earnings Dashboard - NEW: Redirect to payment earnings
+    // Earnings Dashboard
     @GetMapping("/earnings")
     public String viewEarnings(HttpSession session) {
         if (!isSeller(session)) {
             return "redirect:/login";
         }
         return "redirect:/payment/earnings";
+    }
+
+    // New: Seller reviews and responses
+    @GetMapping("/reviews")
+    public String sellerReviews(HttpSession session, Model model) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+
+        User seller = (User) session.getAttribute("user");
+        List<SellerReview> reviews = reviewService.getSellerReviewsSorted(seller, "newest", "approved");
+        ReviewService.ReviewAnalytics analytics = reviewService.getReviewAnalytics(seller);
+        String trustScore = reviewService.getTrustScore(seller);
+
+        model.addAttribute("user", seller);
+        model.addAttribute("reviews", reviews);
+        model.addAttribute("analytics", analytics);
+        model.addAttribute("trustScore", trustScore);
+        model.addAttribute("pageTitle", "AD-X - Seller Reviews");
+        return "seller-reviews";
+    }
+
+    // Product management endpoints (to fix 404 on /seller/products/new and /seller/products)
+    @GetMapping("/products")
+    public String listProducts(HttpSession session, Model model) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+
+        User seller = (User) session.getAttribute("user");
+        List<Product> products = productService.getProductsBySeller(seller);
+        model.addAttribute("products", products);
+        model.addAttribute("pageTitle", "AD-X - My Products");
+        return "seller-products"; // Matches your provided template
+    }
+
+    @GetMapping("/products/new")
+    public String newProduct(HttpSession session, Model model) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+
+        model.addAttribute("product", new Product());
+        model.addAttribute("pageTitle", "AD-X - Add New Product");
+        model.addAttribute("action", "Create"); // For form to show "Create Product"
+        return "seller-product-form"; // Matches your provided template
+    }
+
+    @PostMapping("/products/new")
+    public String createProduct(@ModelAttribute Product product, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+
+        User seller = (User) session.getAttribute("user");
+        Product savedProduct = productService.createProduct(product, seller);
+        if (savedProduct != null) {
+            redirectAttributes.addFlashAttribute("success", "Product created successfully!");
+        } else {
+            redirectAttributes.addFlashAttribute("error", "Failed to create product.");
+        }
+        return "redirect:/seller/products";
+    }
+
+    @GetMapping("/products/edit/{id}")
+    public String editProduct(@PathVariable Long id, HttpSession session, Model model) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+
+        User seller = (User) session.getAttribute("user");
+        Optional<Product> productOpt = productService.getProductByIdAndSeller(id, seller);
+        if (productOpt.isPresent()) {
+            model.addAttribute("product", productOpt.get());
+            model.addAttribute("pageTitle", "AD-X - Edit Product");
+            model.addAttribute("action", "Update"); // For form to show "Update Product"
+            return "seller-product-form"; // Reuse the same form template
+        }
+        return "redirect:/seller/products";
+    }
+
+    @PostMapping("/products/edit/{id}")
+    public String updateProduct(@PathVariable Long id, @ModelAttribute Product productDetails, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+
+        User seller = (User) session.getAttribute("user");
+        Product savedProduct = productService.updateProduct(id, productDetails, seller);
+        if (savedProduct != null) {
+            redirectAttributes.addFlashAttribute("success", "Product updated successfully!");
+        } else {
+            redirectAttributes.addFlashAttribute("error", "Failed to update product.");
+        }
+        return "redirect:/seller/products";
+    }
+
+    @PostMapping("/products/delete/{id}")
+    public String deleteProduct(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+
+        User seller = (User) session.getAttribute("user");
+        boolean deleted = productService.deleteProduct(id, seller);
+        if (deleted) {
+            redirectAttributes.addFlashAttribute("success", "Product deleted successfully!");
+        } else {
+            redirectAttributes.addFlashAttribute("error", "Failed to delete product.");
+        }
+        return "redirect:/seller/products";
+    }
+
+    // New: Inquiries endpoints (to fix 404 on /seller/inquiries)
+    @GetMapping("/inquiries")
+    public String listInquiries(HttpSession session, Model model) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+
+        User seller = (User) session.getAttribute("user");
+        List<Inquiry> inquiries = inquiryService.getSellerInquiries(seller);
+        Long unreadCount = inquiryService.getUnreadInquiryCountForSeller(seller);
+        Long totalInquiries = (long) inquiries.size();
+
+        model.addAttribute("inquiries", inquiries);
+        model.addAttribute("unreadCount", unreadCount);
+        model.addAttribute("totalInquiries", totalInquiries);
+        model.addAttribute("pageTitle", "AD-X - Customer Inquiries");
+        return "seller-inquiries"; // Matches your provided template
+    }
+
+    @GetMapping("/inquiries/{id}")
+    public String inquiryDetails(@PathVariable Long id, HttpSession session, Model model) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+
+        User seller = (User) session.getAttribute("user");
+        Optional<Inquiry> inquiryOpt = inquiryService.getInquiryById(id);
+        if (inquiryOpt.isPresent() && inquiryOpt.get().getSeller().getId().equals(seller.getId())) {
+            Inquiry inquiry = inquiryOpt.get();
+            inquiry.setIsRead(true); // Mark as read
+            inquiryService.createInquiry(inquiry);
+
+            model.addAttribute("inquiry", inquiry);
+            model.addAttribute("pageTitle", "AD-X - Inquiry Details");
+            return "seller-inquiry-details"; // Matches your provided template
+        }
+        return "redirect:/seller/inquiries";
+    }
+
+    @PostMapping("/inquiries/{id}/respond")
+    public String respondToInquiry(@PathVariable Long id, @RequestParam String response, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!isSeller(session)) {
+            return "redirect:/login";
+        }
+
+        User seller = (User) session.getAttribute("user");
+        Optional<Inquiry> inquiryOpt = inquiryService.getInquiryById(id);
+        if (inquiryOpt.isPresent() && inquiryOpt.get().getSeller().getId().equals(seller.getId())) {
+            // Add response logic (e.g., create reply inquiry or update field)
+            inquiryService.clone(inquiryOpt.get(), response, seller);
+            redirectAttributes.addFlashAttribute("success", "Response sent to buyer!");
+        } else {
+            redirectAttributes.addFlashAttribute("error", "Inquiry not found.");
+        }
+        return "redirect:/seller/inquiries/" + id;
     }
 }

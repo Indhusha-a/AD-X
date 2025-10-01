@@ -6,7 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         .profile-header {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 40px 0;
             text-align: center;
@@ -15,31 +15,30 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
-            margin: 20px 0;
+            margin: 30px 0;
         }
-        .stat-card {
+        .stat-box {
             background: white;
-            padding: 20px;
+            padding: 25px;
             border-radius: 10px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 4px solid #28a745;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-        .profile-image {
-            width: 120px;
-            height: 120px;
-            background: linear-gradient(135deg, #28a745, #20c997);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 2.5rem;
-            margin: 0 auto 20px;
+        .stars { color: #ffc107; font-size: 1.5rem; }
+        .trust-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 10px 0;
         }
-        .ml-2 {
-            margin-left: 10px;
-        }
+        .trust-high { background: #d4edda; color: #155724; }
+        .trust-medium { background: #fff3cd; color: #856404; }
+        .trust-low { background: #f8d7da; color: #721c24; }
+        .trust-new { background: #e2e3e5; color: #383d41; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -50,9 +49,6 @@
         <div class="navbar-nav">
             <a href="/seller/dashboard" class="btn btn-secondary me-2">
                 <i class="bi bi-speedometer"></i> Dashboard
-            </a>
-            <a href="/seller/products" class="btn btn-outline-success me-2">
-                <i class="bi bi-boxes"></i> Products
             </a>
             <a class="btn btn-secondary" href="/logout">
                 <i class="bi bi-box-arrow-right"></i> Logout
@@ -65,120 +61,85 @@
 <div class="profile-header">
     <div class="container">
         <h1><i class="bi bi-person-badge"></i> Seller Profile</h1>
-        <p>Manage your business information and settings</p>
+        <p>Manage your business information and reputation</p>
     </div>
 </div>
 
 <div class="container">
-    <div class="card fade-in" style="max-width: 800px; margin: 30px auto;">
-        <!-- Success/Error Messages -->
-        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+    <!-- Success/Error Messages -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-        <!-- Profile Overview -->
-        <div style="text-align: center; margin-bottom: 30px;">
-            <div class="profile-image">
-                <i class="bi bi-shop"></i>
+    <!-- Profile Stats -->
+    <div class="profile-stats">
+        <div class="stat-box">
+            <div class="stars">
+                <span th:each="i : ${#numbers.sequence(1, profile.averageRating != null ? profile.averageRating.intValue() : 0)}">★</span>
+                <span th:each="i : ${#numbers.sequence(1, 5 - (profile.averageRating != null ? profile.averageRating.intValue() : 0))}">☆</span>
             </div>
-            <h2 th:text="${profile.businessName}">Business Name</h2>
-            <p class="text-muted" th:text="${user?.email} ?: 'No email'">seller@example.com</p>
-
-            <div th:if="${profile.isVerified}" class="badge badge-success" style="font-size: 0.9rem;">
-                <i class="bi bi-patch-check"></i> Verified Seller
-            </div>
-            <div th:unless="${profile.isVerified}" class="badge badge-warning" style="font-size: 0.9rem;">
-                <i class="bi bi-clock"></i> Verification Pending
-            </div>
+            <h3 th:text="${profile.averageRating != null ? #numbers.formatDecimal(profile.averageRating, 1, 1) : 0}">0.0</h3>
+            <p>Average Rating</p>
         </div>
-
-        <!-- Business Statistics -->
-        <div class="profile-stats">
-            <div class="stat-card">
-                <h4 th:text="'$' + ${#numbers.formatDecimal(profile.totalRevenue, 1, 2)}">$0</h4>
-                <p>Total Revenue</p>
-            </div>
-            <div class="stat-card">
-                <h4 th:text="${profile.totalOrders}">0</h4>
-                <p>Total Orders</p>
-            </div>
-            <div class="stat-card">
-                <h4 th:text="${#numbers.formatDecimal(profile.averageRating, 1, 2)}">0.00</h4>
-                <p>Average Rating</p>
-            </div>
-            <div class="stat-card">
-                <h4 th:text="${#numbers.formatDecimal(profile.responseRate, 1, 2) + '%'}">0%</h4>
-                <p>Response Rate</p>
-            </div>
+        <div class="stat-box">
+            <span class="trust-badge" th:classappend="'trust-' + ${trustScore.toLowerCase()}" th:text="${trustScore}">New</span>
+            <h3 th:text="${trustScore}">New</h3>
+            <p>Trust Score</p>
         </div>
+        <div class="stat-box">
+            <h3 th:text="${profile.totalOrders}">0</h3>
+            <p>Total Orders</p>
+        </div>
+        <div class="stat-box">
+            <h3 th:text="'$' + ${#numbers.formatDecimal(profile.totalRevenue, 1, 2)}">$0.00</h3>
+            <p>Total Revenue</p>
+        </div>
+    </div>
 
-        <!-- Profile Form -->
-        <form th:action="@{/seller/profile/update}" method="post" th:object="${profile}">
-            <input type="hidden" th:field="*{id}">
-
-            <h3 style="margin-top: 30px; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
-                <i class="bi bi-building"></i> Business Information
-            </h3>
-
+    <!-- Edit Profile Form -->
+    <div class="card fade-in">
+        <h3><i class="bi bi-gear"></i> Edit Business Profile</h3>
+        <form th:action="@{/seller/profile/update}" th:object="${profile}" method="post">
             <div class="form-group">
-                <label for="businessName"><i class="bi bi-building"></i> Business Name:</label>
-                <input type="text" class="form-control" id="businessName" th:field="*{businessName}"
-                       placeholder="Enter your business name" required>
+                <label for="businessName">Business Name</label>
+                <input type="text" id="businessName" th:field="*{businessName}" />
             </div>
-
             <div class="form-group">
-                <label for="businessDescription"><i class="bi bi-text-paragraph"></i> Business Description:</label>
-                <textarea class="form-control" id="businessDescription" th:field="*{businessDescription}"
-                          rows="4" placeholder="Describe your business and services..."></textarea>
+                <label for="businessDescription">Business Description</label>
+                <textarea id="businessDescription" th:field="*{businessDescription}" rows="4"></textarea>
             </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="form-group">
-                    <label for="phoneNumber"><i class="bi bi-telephone"></i> Phone Number:</label>
-                    <input type="tel" class="form-control" id="phoneNumber" th:field="*{phoneNumber}"
-                           placeholder="+1 (555) 123-4567">
-                </div>
-
-                <div class="form-group">
-                    <label for="websiteUrl"><i class="bi bi-globe"></i> Website URL:</label>
-                    <input type="url" class="form-control" id="websiteUrl" th:field="*{websiteUrl}"
-                           placeholder="https://yourbusiness.com">
-                </div>
-            </div>
-
             <div class="form-group">
-                <label for="businessAddress"><i class="bi bi-geo-alt"></i> Business Address:</label>
-                <textarea class="form-control" id="businessAddress" th:field="*{businessAddress}"
-                          rows="3" placeholder="Enter your business address"></textarea>
+                <label for="phoneNumber">Phone Number</label>
+                <input type="text" id="phoneNumber" th:field="*{phoneNumber}" />
             </div>
-
             <div class="form-group">
-                <label for="businessLogoUrl"><i class="bi bi-image"></i> Business Logo URL:</label>
-                <input type="url" class="form-control" id="businessLogoUrl" th:field="*{businessLogoUrl}"
-                       placeholder="https://example.com/logo.png">
-                <small class="text-muted">Add a URL to your business logo for better branding</small>
+                <label for="businessAddress">Business Address</label>
+                <input type="text" id="businessAddress" th:field="*{businessAddress}" />
             </div>
-
-            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 30px;">
-                <a href="/seller/dashboard" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Back to Dashboard
-                </a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-circle"></i> Update Profile
-                </button>
+            <div class="form-group">
+                <label for="websiteUrl">Website URL</label>
+                <input type="url" id="websiteUrl" th:field="*{websiteUrl}" />
             </div>
+            <div class="form-group">
+                <label for="businessLogoUrl">Business Logo URL</label>
+                <input type="url" id="businessLogoUrl" th:field="*{businessLogoUrl}" />
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Update Profile
+            </button>
         </form>
+    </div>
 
-        <!-- Profile Tips -->
-        <div style="margin-top: 30px; padding: 20px; background: #e7f3ff; border-radius: 8px;">
-            <h5><i class="bi bi-lightbulb"></i> Profile Optimization Tips:</h5>
-            <ul style="margin-bottom: 0;">
-                <li>Use a professional business name that reflects your services</li>
-                <li>Write a compelling business description to attract customers</li>
-                <li>Add contact information to build trust with potential buyers</li>
-                <li>Include your website and social media links for credibility</li>
-                <li>Upload a professional logo to enhance your brand identity</li>
-            </ul>
-        </div>
+    <!-- Quick Actions -->
+    <div class="text-center mt-4">
+        <a href="/seller/dashboard" class="btn btn-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+        <a href="/seller/reviews" class="btn btn-warning">
+            <i class="bi bi-star"></i> Manage Reviews & Responses
+        </a>
+        <a href="/payment/earnings" class="btn btn-success">
+            <i class="bi bi-cash-coin"></i> View Earnings
+        </a>
     </div>
 </div>
 

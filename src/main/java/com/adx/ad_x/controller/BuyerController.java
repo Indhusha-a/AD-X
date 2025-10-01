@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -33,6 +34,9 @@ public class BuyerController {
 
     @Autowired
     private PaymentService paymentService;
+
+    @Autowired
+    private ReviewService reviewService;
 
     // Check if user is buyer
     private boolean isBuyer(HttpSession session) {
@@ -70,163 +74,7 @@ public class BuyerController {
 
     // View product details
     @GetMapping("/product/{id}")
-    public String viewProduct(@PathVariable Long id, HttpSession session, Model model) {
-        if (!isBuyer(session)) {
-            return "redirect:/login";
-        }
-        User buyer = (User) session.getAttribute("user");
-        Optional<Product> product = productService.getProductById(id);
-        if (product.isPresent() && product.get().getActive()) {
-            Product productObj = product.get();
-            productObj.setFavorited(favoriteService.isProductFavorited(buyer, productObj));
-            model.addAttribute("product", productObj);
-            model.addAttribute("pageTitle", "AD-X - " + productObj.getTitle());
-            return "buyer-product-details";
-        }
-        model.addAttribute("error", "Product not found or unavailable.");
-        return "redirect:/buyer/browse";
-    }
-
-    // Toggle favorite
-    @PostMapping("/favorites/toggle/{productId}")
-    public String toggleFavorite(@PathVariable Long productId, HttpSession session) {
-        if (!isBuyer(session)) {
-            return "redirect:/login";
-        }
-        User buyer = (User) session.getAttribute("user");
-        Optional<Product> product = productService.getProductById(productId);
-        if (product.isPresent()) {
-            favoriteService.toggleFavorite(buyer, product.get());
-        }
-        return "redirect:/buyer/product/" + productId;
-    }
-
-    // Remove from favorites
-    @PostMapping("/favorites/remove/{productId}")
-    public String removeFavorite(@PathVariable Long productId, HttpSession session) {
-        if (!isBuyer(session)) {
-            return "redirect:/login";
-        }
-        User buyer = (User) session.getAttribute("user");
-        Optional<Product> product = productService.getProductById(productId);
-        if (product.isPresent()) {
-            favoriteService.removeFromFavorites(buyer, product.get());
-        }
-        return "redirect:/buyer/favorites";
-    }
-
-    // View favorites
-    @GetMapping("/favorites")
-    public String viewFavorites(HttpSession session, Model model) {
-        if (!isBuyer(session)) {
-            return "redirect:/login";
-        }
-        User buyer = (User) session.getAttribute("user");
-        List<Favorite> favorites = favoriteService.getUserFavorites(buyer);
-        Long favoriteCount = favoriteService.getFavoriteCount(buyer);
-        model.addAttribute("favorites", favorites);
-        model.addAttribute("favoriteCount", favoriteCount);
-        model.addAttribute("pageTitle", "AD-X - My Favorites");
-        return "buyer-favorites";
-    }
-
-    // Buy product
-    @PostMapping("/buy/{productId}")
-    public String buyProduct(@PathVariable Long productId, HttpSession session, Model model) {
-        if (!isBuyer(session)) {
-            return "redirect:/login";
-        }
-
-        User buyer = (User) session.getAttribute("user");
-        Optional<Product> product = productService.getProductById(productId);
-
-        if (product.isPresent() && product.get().getActive()) {
-            Order order = orderService.createSingleOrder(buyer, product.get());
-            model.addAttribute("success", "Order placed successfully! Please complete payment to confirm your order.");
-            return "redirect:/buyer/purchases";
-        }
-
-        model.addAttribute("error", "Product not available.");
-        return "redirect:/buyer/product/" + productId;
-    }
-
-    // View purchase history
-    @GetMapping("/purchases")
-    public String viewPurchases(HttpSession session, Model model) {
-        if (!isBuyer(session)) {
-            return "redirect:/login";
-        }
-
-        User buyer = (User) session.getAttribute("user");
-        List<Order> orders = orderService.getUserOrders(buyer);
-        Long orderCount = orderService.getUserOrderCount(buyer);
-
-        // Get payment count for dashboard
-        Long paymentCount = (long) orders.stream()
-                .filter(order -> order.getPayment() != null)
-                .count();
-
-        model.addAttribute("orders", orders);
-        model.addAttribute("orderCount", orderCount);
-        model.addAttribute("paymentCount", paymentCount);
-        model.addAttribute("pageTitle", "AD-X - Purchase History");
-        return "buyer-purchases";
-    }
-
-    // Cancel order
-    @PostMapping("/cancel-order/{orderId}")
-    public String cancelOrder(@PathVariable Long orderId, HttpSession session, Model model) {
-        if (!isBuyer(session)) {
-            return "redirect:/login";
-        }
-
-        User buyer = (User) session.getAttribute("user");
-        boolean cancelled = orderService.cancelOrder(orderId, buyer);
-
-        if (cancelled) {
-            model.addAttribute("success", "Order cancelled successfully.");
-        } else {
-            model.addAttribute("error", "Unable to cancel order. Order may be already processed.");
-        }
-
-        return "redirect:/buyer/purchases";
-    }
-
-    // Inquiries page
-    @GetMapping("/inquiries")
-    public String viewInquiries(HttpSession session, Model model) {
-        if (!isBuyer(session)) {
-            return "redirect:/login";
-        }
-
-        User buyer = (User) session.getAttribute("user");
-        List<Inquiry> inquiries = inquiryService.getBuyerInquiries(buyer);
-        Long inquiryCount = inquiryService.getUnreadInquiryCountForBuyer(buyer);
-
-        model.addAttribute("inquiries", inquiries);
-        model.addAttribute("inquiryCount", inquiryCount);
-        model.addAttribute("pageTitle", "AD-X - My Inquiries");
-        return "buyer-inquiries";
-    }
-
-    // Contact seller form
-    @GetMapping("/contact/{productId}")
-    public String contactSeller(@PathVariable Long productId, HttpSession session, Model model) {
-        if (!isBuyer(session)) {
-            return "redirect:/login";
-        }
-        Optional<Product> product = productService.getProductById(productId);
-        if (product.isPresent()) {
-            model.addAttribute("product", product.get());
-            model.addAttribute("pageTitle", "AD-X - Contact Seller");
-            return "buyer-contact-seller";
-        }
-        return "redirect:/buyer/browse";
-    }
-
-    @PostMapping("/contact/{productId}")
-    public String sendMessage(@PathVariable Long productId,
-                              @RequestParam String message,
+    public String viewProduct(@PathVariable Long id,
                               HttpSession session,
                               Model model) {
         if (!isBuyer(session)) {
@@ -234,26 +82,118 @@ public class BuyerController {
         }
 
         User buyer = (User) session.getAttribute("user");
-        Optional<Product> product = productService.getProductById(productId);
+        Optional<Product> productOpt = productService.getProductById(id);
+        if (productOpt.isPresent()) {
+            Product product = productOpt.get();
+            product.setFavorited(favoriteService.isProductFavorited(buyer, product));
 
-        if (product.isPresent() && message != null && !message.trim().isEmpty()) {
+            // Reviews
+            List<ProductReview> reviews = reviewService.getProductReviewsSorted(product, "newest", "approved");
+            Double avgRating = reviewService.getAverageProductRating(product);
+            boolean canReview = reviews.stream().noneMatch(r -> r.getBuyer().getId().equals(buyer.getId()));
+
+            // Set orderItemId if canReview
+            Long orderItemId = null;
+            if (canReview) {
+                List<OrderItem> purchasedItems = orderService.getPurchasedItemsForProduct(buyer, product);
+                if (!purchasedItems.isEmpty()) {
+                    orderItemId = purchasedItems.get(0).getId();
+                }
+            }
+
+            model.addAttribute("product", product);
+            model.addAttribute("reviews", reviews);
+            model.addAttribute("avgRating", avgRating != null ? avgRating : 0.0);
+            model.addAttribute("canReview", canReview);
+            model.addAttribute("orderItemId", orderItemId);
+            model.addAttribute("pageTitle", "AD-X - Product Details");
+            return "buyer-product-details";
+        }
+        return "redirect:/buyer/browse";
+    }
+
+    // Toggle favorite
+    @PostMapping("/favorites/toggle/{id}")
+    public String toggleFavorite(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!isBuyer(session)) {
+            return "redirect:/login";
+        }
+
+        User buyer = (User) session.getAttribute("user");
+        Optional<Product> productOpt = productService.getProductById(id);
+        if (productOpt.isPresent()) {
+            Product product = productOpt.get();
+            favoriteService.toggleFavorite(buyer, product);
+            redirectAttributes.addFlashAttribute("success", "Favorite updated!");
+        }
+        return "redirect:/buyer/product/" + id;
+    }
+
+    // Buy product
+    @PostMapping("/buy/{id}")
+    public String buyProduct(@PathVariable Long id, HttpSession session) {
+        if (!isBuyer(session)) {
+            return "redirect:/login";
+        }
+
+        User buyer = (User) session.getAttribute("user");
+        Optional<Product> productOpt = productService.getProductById(id);
+        if (productOpt.isPresent()) {
+            Order order = orderService.createSingleOrder(buyer, productOpt.get());
+            return "redirect:/buyer/payment/" + order.getId();
+        }
+        return "redirect:/buyer/browse";
+    }
+
+    // Fix: Contact seller - @GetMapping for load form, @PostMapping for submit
+    @GetMapping("/contact/{id}")
+    public String contactSellerForm(@PathVariable Long id, HttpSession session, Model model) {
+        if (!isBuyer(session)) {
+            return "redirect:/login";
+        }
+
+        User buyer = (User) session.getAttribute("user");
+        Optional<Product> productOpt = productService.getProductById(id);
+        if (productOpt.isPresent()) {
+            model.addAttribute("product", productOpt.get());
+            model.addAttribute("inquiry", new Inquiry()); // For form binding
+            model.addAttribute("pageTitle", "AD-X - Contact Seller");
+            return "buyer-contact-seller";
+        }
+        return "redirect:/buyer/browse";
+    }
+
+    @PostMapping("/contact/{id}")
+    public String contactSeller(@PathVariable Long id, @ModelAttribute Inquiry inquiry, HttpSession session, Model model) {
+        if (!isBuyer(session)) {
+            return "redirect:/login";
+        }
+
+        User buyer = (User) session.getAttribute("user");
+        Optional<Product> productOpt = productService.getProductById(id);
+
+        if (productOpt.isPresent() && inquiry.getMessage() != null && !inquiry.getMessage().trim().isEmpty()) {
             // Get the seller from the product
-            User seller = product.get().getSeller();
+            User seller = productOpt.get().getSeller();
 
             // Create inquiry
-            inquiryService.createInquiry(buyer, seller, product.get(), message);
+            inquiry.setBuyer(buyer);
+            inquiry.setSeller(seller);
+            inquiry.setProduct(productOpt.get());
+            inquiryService.createInquiry(inquiry);
 
             model.addAttribute("success", "Your message has been sent to the seller!");
-            model.addAttribute("product", product.get());
+            model.addAttribute("product", productOpt.get());
             return "buyer-contact-seller";
         }
 
         model.addAttribute("error", "Please enter a message.");
-        model.addAttribute("product", product.orElse(null));
+        model.addAttribute("product", productOpt.orElse(null));
+        model.addAttribute("inquiry", inquiry);
         return "buyer-contact-seller";
     }
 
-    // NEW: View payment method selection
+    // View payment method selection
     @GetMapping("/payment/{orderId}")
     public String selectPaymentMethod(@PathVariable Long orderId, HttpSession session, Model model) {
         if (!isBuyer(session)) {
@@ -272,7 +212,7 @@ public class BuyerController {
         return "redirect:/buyer/purchases";
     }
 
-    // NEW: View payment history
+    // View payment history
     @GetMapping("/payment/history")
     public String paymentHistory(HttpSession session, Model model) {
         if (!isBuyer(session)) {
@@ -294,5 +234,70 @@ public class BuyerController {
         model.addAttribute("totalSpent", totalSpent);
         model.addAttribute("pageTitle", "AD-X - Payment History");
         return "buyer-payment-history";
+    }
+
+    // New: View purchases / order history
+    @GetMapping("/purchases")
+    public String purchases(HttpSession session, Model model) {
+        if (!isBuyer(session)) {
+            return "redirect:/login";
+        }
+
+        User buyer = (User) session.getAttribute("user");
+        List<Order> orders = orderService.getUserOrders(buyer);
+
+        // Stats
+        Long totalOrders = orderService.getUserOrderCount(buyer);
+        Long paidOrders = orders.stream().filter(Order::isPaid).count();
+
+        model.addAttribute("orders", orders);
+        model.addAttribute("totalOrders", totalOrders);
+        model.addAttribute("paidOrders", paidOrders);
+        model.addAttribute("pageTitle", "AD-X - Purchase History");
+        return "buyer-purchases";
+    }
+
+    // New: Write product review
+    @GetMapping("/review/product/{orderItemId}")
+    public String writeProductReview(@PathVariable Long orderItemId, Model model, HttpSession session) {
+        if (!isBuyer(session)) {
+            return "redirect:/login";
+        }
+
+        User buyer = (User) session.getAttribute("user");
+        Optional<Order> orderOpt = orderService.getOrderById(orderItemId); // Assume orderItemId is orderId for simplicity
+        if (orderOpt.isPresent() && orderOpt.get().isPaid()) {
+            OrderItem item = orderOpt.get().getItems().stream().findFirst().orElse(null);
+            if (item != null) {
+                Product product = item.getProduct();
+                model.addAttribute("product", product);
+                model.addAttribute("orderItemId", orderItemId);
+                model.addAttribute("pageTitle", "AD-X - Write Product Review");
+                return "write-product-review"; // New template or reuse form
+            }
+        }
+        return "redirect:/buyer/purchases";
+    }
+
+    // New: Rate seller
+    @GetMapping("/review/seller/{orderId}")
+    public String rateSeller(@PathVariable Long orderId, Model model, HttpSession session) {
+        if (!isBuyer(session)) {
+            return "redirect:/login";
+        }
+
+        User buyer = (User) session.getAttribute("user");
+        Optional<Order> orderOpt = orderService.getOrderById(orderId);
+        if (orderOpt.isPresent() && orderOpt.get().isPaid()) {
+            Order order = orderOpt.get();
+            User seller = order.getItems().stream().findFirst().map(item -> item.getProduct().getSeller()).orElse(null);
+            if (seller != null) {
+                model.addAttribute("seller", seller);
+                model.addAttribute("orderId", orderId);
+                model.addAttribute("pageTitle", "AD-X - Rate Seller");
+                return "write-seller-review"; // New template
+            }
+        }
+        return "redirect:/buyer/purchases";
     }
 }

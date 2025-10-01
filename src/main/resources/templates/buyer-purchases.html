@@ -1,76 +1,17 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>AD-X - Purchase History</title>
+    <title th:text="${pageTitle}">AD-X - Purchase History</title>
     <link href="/css/style.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        .purchases-header {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 40px 0;
-            text-align: center;
-        }
-        .order-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 4px solid #28a745;
-        }
-        .order-card.cancelled {
-            border-left-color: #dc3545;
-            opacity: 0.7;
-        }
-        .order-card.pending {
-            border-left-color: #ffc107;
-        }
-        .order-status {
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        .status-confirmed { background: #d4edda; color: #155724; }
+        .order-card { border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 10px; }
+        .order-item { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; }
         .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d4edda; color: #155724; }
         .status-cancelled { background: #f8d7da; color: #721c24; }
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: #6c757d;
-        }
-        .empty-state i {
-            font-size: 5rem;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-        .order-items {
-            margin: 15px 0;
-        }
-        .order-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .order-summary {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 15px;
-        }
-        .payment-status {
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-weight: bold;
-        }
-        .payment-completed { background: #d4edda; color: #155724; }
-        .payment-pending { background: #fff3cd; color: #856404; }
-        .payment-failed { background: #f8d7da; color: #721c24; }
-        .payment-refunded { background: #e2e3e5; color: #383d41; }
+        .review-btns { display: flex; gap: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -79,9 +20,6 @@
     <div class="container">
         <a class="navbar-brand" href="/">🚀 AD-X</a>
         <div class="navbar-nav">
-            <a href="/buyer/browse" class="btn btn-secondary me-2">
-                <i class="bi bi-search"></i> Browse Products
-            </a>
             <a href="/buyer/dashboard" class="btn btn-outline-primary me-2">
                 <i class="bi bi-speedometer"></i> Dashboard
             </a>
@@ -92,117 +30,84 @@
     </div>
 </nav>
 
-<!-- Purchases Header -->
-<div class="purchases-header">
-    <div class="container">
-        <h1><i class="bi bi-bag-check"></i> Purchase History</h1>
-        <p>Your advertising service orders</p>
-    </div>
-</div>
-
 <div class="container">
     <!-- Success/Error Messages -->
     <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-    <!-- Orders Statistics -->
-    <div class="card fade-in" th:if="${orderCount > 0}">
-        <h3><i class="bi bi-graph-up"></i> Order Summary</h3>
-        <p>Total Orders: <strong th:text="${orderCount}"></strong></p>
-        <p>Paid Orders: <strong th:text="${paymentCount}"></strong></p>
-    </div>
+    <h1><i class="bi bi-receipt"></i> Purchase History</h1>
+    <p>Your advertising service orders</p>
 
-    <!-- Orders List -->
-    <div th:if="${orders != null and !orders.empty}">
-        <div th:each="order : ${orders}" class="order-card fade-in"
-             th:classappend="${order.status == 'CANCELLED'} ? 'cancelled' : (${order.status == 'PENDING'} ? 'pending' : '')">
-
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                <div>
-                    <h4 style="margin: 0;">Order #<span th:text="${order.id}"></span></h4>
-                    <small class="text-muted" th:text="${#temporals.format(order.createdAt, 'MMM dd, yyyy HH:mm')}">
-                        Jan 01, 2024 12:00
-                    </small>
-                </div>
-                <div>
-                    <span class="order-status"
-                          th:classappend="${order.status == 'CONFIRMED'} ? 'status-confirmed' : (${order.status == 'PENDING'} ? 'status-pending' : 'status-cancelled')"
-                          th:text="${order.status}">
-                        PENDING
-                    </span>
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5>Total Orders: <span th:text="${totalOrders}">0</span></h5>
                 </div>
             </div>
-
-            <div class="order-items">
-                <div th:each="item : ${order.items}" class="order-item">
-                    <div>
-                        <strong th:text="${item.product.title}">Product Title</strong>
-                        <br>
-                        <small class="text-muted" th:text="${item.product.category}">Category</small>
-                    </div>
-                    <div style="text-align: right;">
-                        <strong th:text="'$' + ${#numbers.formatDecimal(item.price, 1, 2)}">$99.99</strong>
-                        <br>
-                        <small class="text-muted">Qty: <span th:text="${item.quantity}">1</span></small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="order-summary">
-                <div>
-                    <strong>Total: <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$99.99</span></strong>
-                    <!-- Payment Status -->
-                    <div th:if="${order.payment}" style="margin-top: 5px;">
-                        <small>
-                            Payment:
-                            <span th:if="${order.payment.status == 'COMPLETED'}" class="payment-status payment-completed" th:text="${order.payment.status}"></span>
-                            <span th:if="${order.payment.status == 'PENDING'}" class="payment-status payment-pending" th:text="${order.payment.status}"></span>
-                            <span th:if="${order.payment.status == 'FAILED'}" class="payment-status payment-failed" th:text="${order.payment.status}"></span>
-                            <span th:if="${order.payment.status == 'REFUNDED'}" class="payment-status payment-refunded" th:text="${order.payment.status}"></span>
-                            <span th:if="${order.payment.status == 'PARTIALLY_REFUNDED'}" class="payment-status payment-refunded" th:text="${order.payment.status}"></span>
-                        </small>
-                    </div>
-                </div>
-                <div th:if="${order.status == 'PENDING' and order.payment == null}">
-                    <a th:href="@{/buyer/payment/{id}(id=${order.id})}" class="btn btn-success btn-sm me-2">
-                        <i class="bi bi-credit-card"></i> Pay Now
-                    </a>
-                    <form th:action="@{/buyer/cancel-order/{id}(id=${order.id})}" method="post" style="display: inline;">
-                        <button type="submit" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Are you sure you want to cancel this order?')">
-                            <i class="bi bi-x-circle"></i> Cancel
-                        </button>
-                    </form>
-                </div>
-
-                <!-- View Payment Details for Paid Orders -->
-                <div th:if="${order.payment != null}">
-                    <a th:href="@{/payment/history}" class="btn btn-outline-info btn-sm me-2">
-                        <i class="bi bi-receipt"></i> Receipt
-                    </a>
-                </div>
-
-                <!-- Cancel Order Button for Confirmed Orders -->
-                <div th:if="${order.status == 'CONFIRMED'}">
-                    <form th:action="@{/buyer/cancel-order/{id}(id=${order.id})}" method="post" style="display: inline;">
-                        <button type="submit" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Are you sure you want to cancel this order? This may incur cancellation fees.')">
-                            <i class="bi bi-x-circle"></i> Cancel Order
-                        </button>
-                    </form>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5>Paid Orders: <span th:text="${paidOrders}">0</span></h5>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Empty State -->
-    <div th:if="${orders == null or orders.empty}" class="empty-state">
-        <i class="bi bi-bag-check"></i>
-        <h3>No Purchases Yet</h3>
-        <p>You haven't made any purchases yet.</p>
-        <p>Browse our advertising services and make your first purchase to see your order history here.</p>
-        <a href="/buyer/browse" class="btn btn-primary btn-lg mt-3">
-            <i class="bi bi-search"></i> Browse Products
+    <!-- Orders List -->
+    <div th:if="${!orders.isEmpty()}">
+        <div th:each="order : ${orders}" class="order-card">
+            <div class="order-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h4>Order #<span th:text="${order.id}">123</span></h4>
+                <span class="status-badge" th:classappend="'status-' + ${order.status.toLowerCase()}" th:text="${order.status}">PENDING</span>
+            </div>
+            <p><strong>Placed on:</strong> <span th:text="${#temporals.format(order.createdAt, 'MMM dd, yyyy HH:mm')}">Jan 01, 2024 12:00</span></p>
+            <div th:each="item : ${order.items}" class="order-item">
+                <div style="display: flex; justify-content: space-between;">
+                    <div>
+                        <h6 th:text="${item.product.title}">Product Title</h6>
+                        <p><small>Category: <span th:text="${item.product.category}">Category</span> | Qty: <span th:text="${item.quantity}">1</span></small></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p th:text="'$' + ${#numbers.formatDecimal(item.price, 1, 2)}">$99.99</p>
+                    </div>
+                </div>
+            </div>
+            <div class="order-footer" style="border-top: 1px solid #eee; padding-top: 15px; text-align: right;">
+                <h5>Total: $<span th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2)}">99.99</span></h5>
+                <p><strong>Status:</strong> <span th:text="${order.status}">PENDING</span></p>
+                <div th:if="${order.payment}">
+                    <p><strong>Payment:</strong> <span th:text="${order.payment.status}">PENDING</span></p>
+                </div>
+                <!-- Fixed: Use order.items[0].id for orderItemId -->
+                <div class="review-btns" th:if="${order.isPaid() and order.status == 'CONFIRMED'}">
+                    <a th:href="@{/buyer/review/product/{orderItemId}(orderItemId=${order.items[0].id})}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-star"></i> Write Product Review
+                    </a>
+                    <a th:href="@{/buyer/review/seller/{orderId}(orderId=${order.id})}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-person-star"></i> Rate Seller
+                    </a>
+                </div>
+                <div th:if="${order.status == 'PENDING'}">
+                    <a th:href="@{/buyer/payment/{id}(id=${order.id})}" class="btn btn-success btn-sm">Pay Now</a>
+                    <a th:href="@{/buyer/cancel/{id}(id=${order.id})}" class="btn btn-danger btn-sm" onclick="return confirm('Cancel this order?')">Cancel</a>
+                </div>
+                <div th:if="${order.status == 'CONFIRMED' and order.payment.status == 'COMPLETED'}">
+                    <a th:href="@{/buyer/receipt/{id}(id=${order.id})}" class="btn btn-info btn-sm">View Receipt</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Purchases -->
+    <div th:if="${orders.isEmpty()}" class="text-center" style="padding: 50px;">
+        <i class="bi bi-receipt-cutoff" style="font-size: 4rem; color: #6c757d; margin-bottom: 20px;"></i>
+        <h4>No Purchases Yet</h4>
+        <p>You haven't made any purchases yet. Browse our advertising services and make your first purchase!</p>
+        <a href="/buyer/browse" class="btn btn-primary">
+            <i class="bi bi-shop"></i> Browse Products
         </a>
     </div>
 </div>
@@ -217,13 +122,11 @@
 </footer>
 
 <script>
-    // Auto-hide alerts after 5 seconds
+    // Auto-hide alerts
     document.addEventListener('DOMContentLoaded', function() {
         const alerts = document.querySelectorAll('.alert');
         alerts.forEach(alert => {
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 5000);
+            setTimeout(() => alert.style.display = 'none', 5000);
         });
     });
 </script>

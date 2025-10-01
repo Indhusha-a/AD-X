@@ -379,3 +379,8 @@ a:hover {
     border-color: #667eea;
     box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
 }
+
+.star-rating { font-size: 1.5rem; color: #ffc107; }
+.stars ★ { color: #ffc107; }
+.stars ☆ { color: #ddd; }
+.review-card { border-left: 4px solid #ffc107; }

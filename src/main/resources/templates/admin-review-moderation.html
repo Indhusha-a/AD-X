@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle}">AD-X - Admin Review Moderation</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .review-card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .moderation-actions { display: flex; gap: 10px; align-items: center; }
+        .stars { color: #ffc107; font-size: 1.2rem; margin: 10px 0; }
+        .media img { width: 100px; height: auto; margin: 5px; }
+    </style>
+</head>
+<body>
+<!-- Navigation Header -->
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/">🚀 AD-X</a>
+        <div class="navbar-nav">
+                <span class="navbar-text" style="margin-right: 20px;">
+                    <i class="bi bi-person-shield"></i> Admin Panel
+                </span>
+            <a href="/admin/dashboard" class="btn btn-secondary me-2">
+                <i class="bi bi-speedometer"></i> Dashboard
+            </a>
+            <a class="btn btn-secondary" href="/logout">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- Success/Error Messages -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="dashboard-header">
+        <h1><i class="bi bi-star"></i> Review Moderation Panel</h1>
+        <p>Review and moderate pending user reviews. Total Pending: <span th:text="${pendingReviews.size()}">0</span></p>
+    </div>
+
+    <!-- Pending Product Reviews -->
+    <div th:if="${!pendingReviews.isEmpty()}">
+        <h3>Pending Reviews</h3>
+        <div th:each="review : ${pendingReviews}" class="review-card">
+            <!-- Product Review -->
+            <div th:if="${review is com.adx.ad_x.model.ProductReview}">
+                <div class="review-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h5>Product Review for <span th:text="${review.product.title}">Product Title</span> by <span th:text="${review.buyer.firstName + ' ' + review.buyer.lastName}">Buyer Name</span></h5>
+                    <span th:text="${#temporals.format(review.createdAt, 'MMM dd, yyyy HH:mm')}">Jan 01, 2024 12:00</span>
+                </div>
+                <div class="stars">
+                    <span th:each="i : ${#numbers.sequence(1, review.rating)}">★</span>
+                    <span th:each="i : ${#numbers.sequence(1, 5 - review.rating)}">☆</span>
+                </div>
+                <p th:text="${review.comment}">Review comment...</p>
+                <div th:if="${!review.mediaUrls.isEmpty()}" class="media">
+                    <strong>Media:</strong>
+                    <div th:each="url : ${review.mediaUrls}">
+                        <img th:src="${url}" alt="Media" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seller Review -->
+            <div th:if="${review is com.adx.ad_x.model.SellerReview}">
+                <div class="review-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h5>Seller Review for <span th:text="${review.seller.firstName + ' ' + review.seller.lastName}">Seller Name</span> by <span th:text="${review.buyer.firstName + ' ' + review.buyer.lastName}">Buyer Name</span></h5>
+                    <span th:text="${#temporals.format(review.createdAt, 'MMM dd, yyyy HH:mm')}">Jan 01, 2024 12:00</span>
+                </div>
+                <div class="stars">
+                    <span th:each="i : ${#numbers.sequence(1, review.rating)}">★</span>
+                    <span th:each="i : ${#numbers.sequence(1, 5 - review.rating)}">☆</span>
+                </div>
+                <p th:text="${review.comment}">Review comment...</p>
+                <div th:if="${!review.mediaUrls.isEmpty()}" class="media">
+                    <strong>Media:</strong>
+                    <div th:each="url : ${review.mediaUrls}">
+                        <img th:src="${url}" alt="Media" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Moderation Form -->
+            <div class="moderation-actions">
+                <form th:action="@{/reviews/admin/moderate/{id}(id=${review.id})}" method="post" style="display: inline;">
+                    <input type="hidden" th:value="${review is com.adx.ad_x.model.ProductReview} ? 'true' : 'false'" name="isProductReview" />
+                    <button type="submit" name="action" value="APPROVE" class="btn btn-success btn-sm">
+                        <i class="bi bi-check-lg"></i> Approve
+                    </button>
+                    <button type="submit" name="action" value="REJECT" class="btn btn-danger btn-sm">
+                        <i class="bi bi-x-lg"></i> Reject
+                    </button>
+                    <input type="text" name="reason" placeholder="Reject reason (optional)" class="form-control" style="width: 200px; margin-left: 10px;" />
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${pendingReviews.isEmpty()}" class="alert alert-info text-center">
+        <i class="bi bi-check-circle" style="font-size: 3rem; margin-bottom: 10px;"></i>
+        <h4>No Pending Reviews</h4>
+        <p>All reviews are approved or resolved. Check back later!</p>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="/admin/dashboard" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Admin Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <p>🚀 <strong>AD-X Advertising Platform</strong> - Admin Review Moderation</p>
+        <p>© 2024 AD-X. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    </div>
+</footer>
+
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        });
+    });
+</script>
+</body>
+</html>

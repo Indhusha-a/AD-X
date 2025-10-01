@@ -130,6 +130,31 @@
             align-items: center;
             justify-content: center;
         }
+
+        /* Review Analytics Styles */
+        .review-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .review-stat-card {
+            background: linear-gradient(135deg, #ffc107, #ffed4e);
+            color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .trust-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .trust-high { background: #d4edda; color: #155724; }
+        .trust-medium { background: #fff3cd; color: #856404; }
+        .trust-low { background: #f8d7da; color: #721c24; }
+        .trust-new { background: #e2e3e5; color: #383d41; }
     </style>
 </head>
 <body>
@@ -242,6 +267,43 @@
         </p>
     </div>
 
+    <!-- Review Analytics -->
+    <div class="card fade-in">
+        <h3><i class="bi bi-star"></i> Review Analytics</h3>
+        <div class="review-stats">
+            <div class="review-stat-card">
+                <div class="stars">
+                    <span th:each="i : ${#numbers.sequence(1, reviewAnalytics.averageRating != null ? reviewAnalytics.averageRating.intValue() : 0)}">★</span>
+                    <span th:each="i : ${#numbers.sequence(1, 5 - (reviewAnalytics.averageRating != null ? reviewAnalytics.averageRating.intValue() : 0))}">☆</span>
+                </div>
+                <h4 th:text="${reviewAnalytics.averageRating != null ? #numbers.formatDecimal(reviewAnalytics.averageRating, 1, 1) : 0}">0.0</h4>
+                <p>Average Rating</p>
+            </div>
+            <div class="review-stat-card">
+                <h4 th:text="${reviewAnalytics.totalReviews}">0</h4>
+                <p>Total Reviews</p>
+            </div>
+            <div class="review-stat-card">
+                <h4 th:text="${reviewAnalytics.positiveReviews}">0</h4>
+                <p>Positive Reviews</p>
+            </div>
+            <div class="review-stat-card">
+                <h4 th:text="${reviewAnalytics.negativeReviews}">0</h4>
+                <p>Negative Reviews</p>
+            </div>
+        </div>
+        <div class="text-center">
+            <span class="trust-badge" th:classappend="'trust-' + ${trustScore.toLowerCase()}">
+                <i class="bi bi-shield-check"></i> Trust Score: <span th:text="${trustScore}">New</span>
+            </span>
+        </div>
+        <div class="text-center mt-3">
+            <a href="/seller/reviews" class="btn btn-primary">
+                <i class="bi bi-star"></i> View All Reviews & Respond
+            </a>
+        </div>
+    </div>
+
     <!-- Quick Actions -->
     <div class="card fade-in">
         <h3><i class="bi bi-lightning"></i> Quick Actions</h3>
@@ -302,6 +364,16 @@
                 <strong>Profile</strong>
                 <small>Business settings</small>
             </a>
+
+            <!-- New: Reviews Action -->
+            <a href="/seller/reviews" class="action-btn">
+                <div class="action-icon">
+                    <i class="bi bi-star"></i>
+                </div>
+                <strong>Reviews</strong>
+                <small>Respond to feedback</small>
+                <span th:if="${reviewAnalytics.totalReviews > 0}" class="notification-badge" th:text="${reviewAnalytics.totalReviews}"></span>
+            </a>
         </div>
     </div>
 
@@ -310,7 +382,7 @@
         <h3><i class="bi bi-clock-history"></i> Recent Activity</h3>
 
         <!-- Recent Orders -->
-        <div th:if="${not recentOrders.empty}">
+        <div th:if="${!recentOrders.isEmpty()}">
             <h4 style="margin-top: 20px; color: #28a745;"><i class="bi bi-bag-check"></i> Recent Orders</h4>
             <div th:each="order : ${recentOrders}">
                 <div class="activity-item">
@@ -335,7 +407,7 @@
         </div>
 
         <!-- Recent Inquiries -->
-        <div th:if="${not recentInquiries.empty}">
+        <div th:if="${!recentInquiries.isEmpty()}">
             <h4 style="margin-top: 20px; color: #17a2b8;"><i class="bi bi-chat-dots"></i> Recent Inquiries</h4>
             <div th:each="inquiry : ${recentInquiries}">
                 <div class="activity-item">
@@ -361,7 +433,7 @@
         </div>
 
         <!-- No Activity Message -->
-        <div th:if="${recentOrders.empty and recentInquiries.empty}" style="background: #f8f9fa; padding: 25px; border-radius: 10px; text-align: center;">
+        <div th:if="${recentOrders.isEmpty() and recentInquiries.isEmpty()}" style="background: #f8f9fa; padding: 25px; border-radius: 10px; text-align: center;">
             <i class="bi bi-info-circle" style="font-size: 2rem; color: #6c757d; margin-bottom: 15px;"></i>
             <h4 style="color: #6c757d;">No Recent Activity</h4>
             <p style="color: #6c757d;">Add your first product to start seeing activity here!</p>
@@ -371,15 +443,19 @@
         </div>
 
         <!-- View All Links -->
-        <div th:if="${not recentOrders.empty or not recentInquiries.empty}" style="margin-top: 20px; text-align: center;">
-            <a href="/seller/orders" class="btn btn-outline-primary btn-sm me-2" th:if="${not recentOrders.empty}">
+        <div th:if="${!recentOrders.isEmpty() or !recentInquiries.isEmpty()}" style="margin-top: 20px; text-align: center;">
+            <a href="/seller/orders" class="btn btn-outline-primary btn-sm me-2" th:if="${!recentOrders.isEmpty()}">
                 <i class="bi bi-bag-check"></i> View All Orders
             </a>
-            <a href="/seller/inquiries" class="btn btn-outline-info btn-sm" th:if="${not recentInquiries.empty}">
+            <a href="/seller/inquiries" class="btn btn-outline-info btn-sm" th:if="${!recentInquiries.isEmpty()}">
                 <i class="bi bi-chat-dots"></i> View All Inquiries
             </a>
             <a href="/payment/earnings" class="btn btn-outline-success btn-sm ms-2">
                 <i class="bi bi-cash-coin"></i> View Earnings
+            </a>
+            <!-- New: Reviews Link -->
+            <a href="/seller/reviews" class="btn btn-outline-warning btn-sm ms-2">
+                <i class="bi bi-star"></i> View Reviews
             </a>
         </div>
     </div>
@@ -417,6 +493,9 @@
                     <i class="bi bi-star-fill text-warning ml-1"></i>
                 </div>
                 <div>
+                    <strong>Trust Score:</strong> <span class="trust-badge" th:classappend="'trust-' + ${trustScore.toLowerCase()}" th:text="${trustScore}">New</span>
+                </div>
+                <div>
                     <strong>Member Since:</strong> <span th:text="${#temporals.format(profile.createdAt, 'MMM yyyy')}">Today</span>
                 </div>
             </div>
@@ -434,6 +513,10 @@
             </a>
             <a href="/seller/analytics" class="btn btn-info">
                 <i class="bi bi-graph-up"></i> View Analytics
+            </a>
+            <!-- New: Reviews Link -->
+            <a href="/seller/reviews" class="btn btn-warning">
+                <i class="bi bi-star"></i> Manage Reviews
             </a>
         </div>
     </div>

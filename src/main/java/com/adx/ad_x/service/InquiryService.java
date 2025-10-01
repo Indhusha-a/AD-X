@@ -79,4 +79,10 @@ public class InquiryService {
         }
         return null;
     }
+
+    public void createInquiry(Inquiry inquiry) {
+    }
+
+    public void clone(Inquiry inquiry, String response, User seller) {
+    }
 }

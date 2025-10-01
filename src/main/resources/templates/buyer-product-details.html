@@ -119,6 +119,77 @@
             text-decoration: underline;
         }
 
+        /* Reviews Section */
+        .reviews-section {
+            margin-top: 40px;
+            grid-column: 1 / -1;
+        }
+        .reviews-section h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .avg-stars {
+            color: #ffc107;
+            font-size: 1.5rem;
+            margin-left: 10px;
+        }
+        .review-card {
+            border: 1px solid #eee;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .review-stars {
+            color: #ffc107;
+            font-size: 1.2rem;
+        }
+        .vote-btns {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .review-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .review-form .form-group {
+            margin-bottom: 15px;
+        }
+        .review-form select, .review-form textarea, .review-form input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        /* Contact Form */
+        .contact-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .contact-form .form-group {
+            margin-bottom: 15px;
+        }
+        .contact-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+        }
+
         @media (max-width: 768px) {
             .product-container {
                 grid-template-columns: 1fr;
@@ -168,7 +239,7 @@
 <div class="container">
     <!-- Success/Error Messages -->
     <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
     <div class="product-container">
         <!-- Product Image -->
@@ -220,8 +291,8 @@
                     <button type="submit" class="btn btn-large" th:classappend="${product.favorited} ? 'btn-danger' : 'btn-outline-danger'">
                         <i class="bi" th:classappend="${product.favorited} ? 'bi-heart-fill' : 'bi-heart'"></i>
                         <span th:text="${product.favorited} ? 'Remove from Favorites' : 'Add to Favorites'">
-                            Add to Favorites
-                        </span>
+                                Add to Favorites
+                            </span>
                     </button>
                 </form>
 
@@ -232,9 +303,13 @@
                     </button>
                 </form>
 
-                <a th:href="@{/buyer/contact/{id}(id=${product.id})}" class="btn btn-primary btn-large">
-                    <i class="bi bi-chat-dots"></i> Contact Seller
-                </a>
+                <!-- Contact Seller Form (Fixed: POST with textarea for message) -->
+                <form th:action="@{/buyer/contact/{id}(id=${product.id})}" method="post" class="btn-large" style="display: inline;">
+                    <textarea name="message" placeholder="Ask about this service..." rows="1" style="width: 200px; margin-right: 5px; padding: 5px;" required></textarea>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-chat-dots"></i> Send Message
+                    </button>
+                </form>
             </div>
 
             <!-- Additional Info -->
@@ -245,6 +320,73 @@
                 <p><strong>Revisions:</strong> 2 free revisions included</p>
                 <p><strong>Support:</strong> 30 days post-service support</p>
             </div>
+        </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div class="reviews-section">
+        <h3><i class="bi bi-star"></i> Reviews & Ratings
+            <span class="avg-stars">
+                    <span th:each="i : ${#numbers.sequence(1, avgRating.intValue())}">★</span>
+                    <span th:each="i : ${#numbers.sequence(1, 5 - avgRating.intValue())}">☆</span>
+                    (<span th:text="${avgRating} + ' / 5'">0 / 5</span>)
+                </span>
+        </h3>
+
+        <!-- Review List -->
+        <div th:each="review : ${reviews}" class="review-card">
+            <div class="review-header">
+                <span th:text="${review.buyer.firstName + ' ' + review.buyer.lastName}">Buyer Name</span>
+                <span th:text="${#temporals.format(review.createdAt, 'MMM dd, yyyy')}">Jan 01, 2024</span>
+            </div>
+            <div class="review-stars">
+                <span th:each="i : ${#numbers.sequence(1, review.rating)}">★</span>
+                <span th:each="i : ${#numbers.sequence(1, 5 - review.rating)}">☆</span>
+            </div>
+            <p th:text="${review.comment}">Great product, fast delivery!</p>
+            <div th:if="${review.response != null}" style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <strong>Seller Response:</strong> <span th:text="${review.response.responseText}">Thanks for your feedback!</span>
+            </div>
+            <div class="vote-btns">
+                <form th:action="@{/reviews/vote/{id}(id=${review.id}, productId=${product.id})}" method="post" style="display: inline;">
+                    <button type="submit" name="helpful" value="true" class="btn btn-sm btn-outline-success">Helpful</button>
+                </form>
+                <small th:text="'(' + ${review.helpfulnessVotes} + ' votes)'">(0 votes)</small>
+            </div>
+        </div>
+
+        <!-- Submit Review Form (if eligible) -->
+        <div th:if="${canReview}" class="review-form">
+            <h4>Share Your Experience</h4>
+            <form th:action="@{/reviews/product/submit}" method="post">
+                <input type="hidden" th:value="${product.id}" name="productId" />
+                <input type="hidden" th:value="${orderItemId}" name="orderItemId" />
+                <div class="form-group">
+                    <label>Rating (1-5):</label>
+                    <select name="rating" class="form-control">
+                        <option value="1">1 Star</option>
+                        <option value="2">2 Stars</option>
+                        <option value="3">3 Stars</option>
+                        <option value="4">4 Stars</option>
+                        <option value="5" selected>5 Stars</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Comment:</label>
+                    <textarea name="comment" class="form-control" rows="4" placeholder="Tell us about your experience..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Media URLs (comma-separated):</label>
+                    <input type="text" name="mediaUrls" class="form-control" placeholder="https://example.com/image.jpg, https://example.com/video.mp4" />
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Submit Review
+                </button>
+            </form>
+        </div>
+
+        <div th:if="${!canReview}" class="alert alert-info">
+            <i class="bi bi-info-circle"></i> You've already reviewed this product. Thank you for your feedback!
         </div>
     </div>
 </div>
@@ -266,6 +408,16 @@
         buyButtons.forEach(button => {
             button.addEventListener('click', function(e) {
                 if (!confirm('Are you sure you want to purchase this advertising service?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        // Vote confirmation
+        const voteForms = document.querySelectorAll('form[action*="/vote/"]');
+        voteForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('Mark as helpful?')) {
                     e.preventDefault();
                 }
             });

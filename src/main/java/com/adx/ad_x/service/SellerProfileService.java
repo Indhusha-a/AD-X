@@ -82,4 +82,12 @@ public class SellerProfileService {
     public List<User> getAllSellers() {
         return userRepository.findByRole("SELLER");
     }
+    public void updateAverageRating(User seller, Double rating) {
+        Optional<SellerProfile> profileOpt = sellerProfileRepository.findByUser(seller);
+        if (profileOpt.isPresent()) {
+            SellerProfile profile = profileOpt.get();
+            profile.setAverageRating(BigDecimal.valueOf(rating));
+            sellerProfileRepository.save(profile);
+        }
+    }
 }

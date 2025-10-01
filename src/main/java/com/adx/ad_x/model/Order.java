@@ -89,4 +89,6 @@ public class Order {
         return items.stream()
                 .anyMatch(item -> item.getProduct().getSeller().getId().equals(seller.getId()));
     }
+
+
 }

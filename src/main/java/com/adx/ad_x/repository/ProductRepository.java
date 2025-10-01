@@ -1,6 +1,7 @@
 package com.adx.ad_x.repository;
 
 import com.adx.ad_x.model.Product;
+import com.adx.ad_x.model.ProductReview;
 import com.adx.ad_x.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -40,4 +41,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Find products by price range
     @Query("SELECT p FROM Product p WHERE p.active = true AND p.price BETWEEN :minPrice AND :maxPrice")
     List<Product> findByPriceRange(@Param("minPrice") Double minPrice, @Param("maxPrice") Double maxPrice);
+
+    @Query("SELECT r FROM ProductReview r WHERE r.status = :status AND r.isActive = true")
+    List<ProductReview> findByStatusAndIsActiveTrue(@Param("status") String status);
 }
