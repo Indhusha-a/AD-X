@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -269,5 +270,29 @@ public class BuyerController {
         }
 
         return "redirect:/buyer/purchases";
+    }
+
+    // NEW: View payment history
+    @GetMapping("/payment/history")
+    public String paymentHistory(HttpSession session, Model model) {
+        if (!isBuyer(session)) {
+            return "redirect:/login";
+        }
+
+        User buyer = (User) session.getAttribute("user");
+        List<Payment> payments = paymentService.getPaymentsByBuyer(buyer);
+
+        // Calculate total spent safely
+        BigDecimal totalSpent = BigDecimal.ZERO;
+        for (Payment payment : payments) {
+            if ("COMPLETED".equals(payment.getStatus()) && payment.getAmount() != null) {
+                totalSpent = totalSpent.add(payment.getAmount());
+            }
+        }
+
+        model.addAttribute("payments", payments);
+        model.addAttribute("totalSpent", totalSpent);
+        model.addAttribute("pageTitle", "AD-X - Payment History");
+        return "buyer-payment-history";
     }
 }

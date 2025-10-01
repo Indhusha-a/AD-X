@@ -49,6 +49,7 @@ public class PayoutService {
             fee = new BigDecimal("1.00");
         }
         payout.setTransactionFee(fee);
+        payout.calculateNetAmount();
 
         return payoutRepository.save(payout);
     }
@@ -89,17 +90,8 @@ public class PayoutService {
 
     // Calculate pending earnings for a seller
     public BigDecimal calculatePendingEarnings(User seller) {
-        // Sum of all completed payment earnings minus completed payouts
-        BigDecimal totalEarnings = BigDecimal.ZERO;
-        List<Payment> completedPayments = paymentRepository.findCompletedPaymentsBySeller(seller);
-
-        for (Payment payment : completedPayments) {
-            totalEarnings = totalEarnings.add(payment.getSellerEarnings());
-        }
-
-        BigDecimal totalPayouts = payoutRepository.calculateTotalPayoutsBySeller(seller);
-
-        return totalEarnings.subtract(totalPayouts);
+        // Use the repository method to calculate pending earnings
+        return payoutRepository.calculatePendingEarnings(seller);
     }
 
     // Get payouts by seller
@@ -133,7 +125,7 @@ public class PayoutService {
 
     // Generate weekly payouts for all eligible sellers
     public void generateWeeklyPayouts() {
-        List<User> sellers = sellerProfileService.getAllSellers(); // You'll need to implement this method
+        List<User> sellers = sellerProfileService.getAllSellers();
 
         for (User seller : sellers) {
             BigDecimal pendingEarnings = calculatePendingEarnings(seller);

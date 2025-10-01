@@ -81,15 +81,8 @@
     <!-- Payment Statistics -->
     <div class="card fade-in" th:if="${not payments.empty}">
         <h3><i class="bi bi-graph-up"></i> Payment Summary</h3>
-        <p>Total Payments: <strong th:text="${payments.size()}"></strong></p>
-        <p>Total Spent:
-            <strong>
-                <span th:text="${#numbers.formatDecimal(
-                    payments.?[status == 'COMPLETED'].![amount].![toBigInteger()].![intValue()].?[intValue()].sum(),
-                    1, 2
-                )}">$0.00</span>
-            </strong>
-        </p>
+        <p>Total Payments: <strong th:text="${payments.size()}">0</strong></p>
+        <p>Total Spent: <strong th:text="'$' + ${#numbers.formatDecimal(totalSpent, 1, 2)}">$0.00</strong></p>
     </div>
 
     <!-- Payments List -->
