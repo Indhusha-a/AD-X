@@ -28,6 +28,9 @@ public class PaymentService {
     @Autowired
     private SellerProfileService sellerProfileService;
 
+    @Autowired
+    private NotificationService notificationService;
+
     // Process a payment for an order
     @Transactional
     public Payment processPayment(Order order, User buyer, String paymentMethod, String paymentGateway) {
@@ -38,7 +41,7 @@ public class PaymentService {
         // Save payment first to get an ID
         payment = paymentRepository.save(payment);
 
-        // Simulate payment processing (in real app, integrate with payment gateway)
+        // Simulate payment processing
         boolean paymentSuccess = simulatePaymentProcessing(payment);
 
         if (paymentSuccess) {
@@ -50,7 +53,7 @@ public class PaymentService {
             order.setPayment(payment);
             orderService.updateOrder(order);
 
-            // Record financial transaction - FIXED: payment is now saved
+            // Record financial transaction
             recordFinancialTransaction("PAYMENT", payment.getAmount(), buyer,
                     "Payment for Order #" + order.getId(), payment);
 
@@ -59,6 +62,25 @@ public class PaymentService {
 
             // Save the updated payment
             payment = paymentRepository.save(payment);
+
+            // CREATE: Create notification for successful payment
+            notificationService.createNotification(
+                    buyer,
+                    "Payment Received",
+                    "Payment of $" + payment.getAmount() + " has been received successfully.",
+                    "PAYMENT"
+            );
+
+            // CREATE: Notify seller about payment received
+            for (OrderItem item : order.getItems()) {
+                User seller = item.getProduct().getSeller();
+                notificationService.createNotification(
+                        seller,
+                        "Payment Received",
+                        "Payment of $" + payment.getSellerEarnings() + " has been received for order #" + order.getId(),
+                        "PAYMENT"
+                );
+            }
         } else {
             payment.setStatus("FAILED");
             payment.setGatewayResponse("Payment processing failed");
@@ -106,7 +128,25 @@ public class PaymentService {
             // Update seller revenue (deduct refund)
             updateSellerRevenueOnRefund(payment.getOrder(), refundAmount);
 
-            return paymentRepository.save(payment);
+            Payment savedPayment = paymentRepository.save(payment);
+
+            // CREATE: Notify buyer about refund
+            notificationService.createNotification(
+                    payment.getBuyer(),
+                    "Refund Processed",
+                    "Refund of $" + refundAmount + " has been processed for your payment.",
+                    "PAYMENT"
+            );
+
+            // CREATE: Notify seller about refund
+            notificationService.createNotification(
+                    payment.getOrder().getItems().get(0).getProduct().getSeller(),
+                    "Refund Issued",
+                    "Refund of $" + refundAmount + " has been issued for order #" + payment.getOrder().getId(),
+                    "PAYMENT"
+            );
+
+            return savedPayment;
         }
         return null;
     }
@@ -133,35 +173,47 @@ public class PaymentService {
 
     // Calculate platform revenue
     public BigDecimal calculatePlatformRevenue(LocalDateTime startDate, LocalDateTime endDate) {
-        return paymentRepository.calculateTotalRevenue(startDate, endDate);
+        List<Payment> payments = paymentRepository.findByDateRange(startDate, endDate);
+        return payments.stream()
+                .filter(p -> "COMPLETED".equals(p.getStatus()))
+                .map(Payment::getCommissionAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     // Calculate platform commission
     public BigDecimal calculatePlatformCommission(LocalDateTime startDate, LocalDateTime endDate) {
-        return paymentRepository.calculateTotalCommission(startDate, endDate);
+        List<Payment> payments = paymentRepository.findByDateRange(startDate, endDate);
+        return payments.stream()
+                .filter(p -> "COMPLETED".equals(p.getStatus()))
+                .map(Payment::getCommissionAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     // Get payment statistics
     public PaymentStatistics getPaymentStatistics() {
         PaymentStatistics stats = new PaymentStatistics();
-        stats.setTotalPayments(paymentRepository.count());
-        stats.setCompletedPayments(paymentRepository.countByStatus("COMPLETED"));
-        stats.setPendingPayments(paymentRepository.countByStatus("PENDING"));
-        stats.setFailedPayments(paymentRepository.countByStatus("FAILED"));
-        stats.setRefundedPayments(paymentRepository.countByStatus("REFUNDED"));
+
+        // Get all payments
+        List<Payment> allPayments = paymentRepository.findAll();
+
+        // Calculate statistics
+        stats.setTotalPayments((long) allPayments.size());
+        stats.setCompletedPayments(allPayments.stream().filter(p -> "COMPLETED".equals(p.getStatus())).count());
+        stats.setPendingPayments(allPayments.stream().filter(p -> "PENDING".equals(p.getStatus())).count());
+        stats.setFailedPayments(allPayments.stream().filter(p -> "FAILED".equals(p.getStatus())).count());
+        stats.setRefundedPayments(allPayments.stream().filter(p -> "REFUNDED".equals(p.getStatus())).count());
 
         // Calculate today's revenue
         LocalDateTime todayStart = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
         LocalDateTime todayEnd = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);
-        stats.setTodayRevenue(paymentRepository.calculateTotalRevenue(todayStart, todayEnd));
+        stats.setTodayRevenue(calculatePlatformRevenue(todayStart, todayEnd));
 
         return stats;
     }
 
     // Helper method to simulate payment processing
     private boolean simulatePaymentProcessing(Payment payment) {
-        // In a real application, this would integrate with a payment gateway like Stripe, PayPal, etc.
-        // For demo purposes, we'll simulate a successful payment 95% of the time
+        // For demo purposes, simulate a successful payment 95% of the time
         return Math.random() > 0.05; // 5% failure rate for demo
     }
 
@@ -173,7 +225,7 @@ public class PaymentService {
     // Helper method to record financial transactions
     private void recordFinancialTransaction(String type, BigDecimal amount, User user, String description, Payment payment) {
         FinancialTransaction transaction = new FinancialTransaction(type, amount, user, description);
-        transaction.setPayment(payment); // Payment is now saved and has an ID
+        transaction.setPayment(payment);
         financialTransactionRepository.save(transaction);
     }
 
@@ -195,7 +247,7 @@ public class PaymentService {
         }
     }
 
-    // Statistics class
+    // Statistics class - ADDED BACK
     public static class PaymentStatistics {
         private Long totalPayments;
         private Long completedPayments;

@@ -45,4 +45,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     // NEW: Calculate total earnings for a seller
     @Query("SELECT COALESCE(SUM(p.sellerEarnings), 0) FROM Payment p JOIN p.order o JOIN o.items i WHERE i.product.seller = :seller AND p.status = 'COMPLETED'")
     BigDecimal calculateTotalEarningsBySeller(@Param("seller") User seller);
+
+
 }

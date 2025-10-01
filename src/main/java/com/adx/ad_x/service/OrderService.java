@@ -24,7 +24,9 @@ public class OrderService {
     @Autowired
     private ProductService productService;
 
-    // Existing methods...
+    @Autowired
+    private NotificationService notificationService;
+
     public Order createSingleOrder(User buyer, Product product) {
         Order order = new Order();
         order.setBuyer(buyer);
@@ -42,7 +44,25 @@ public class OrderService {
         order.setItems(items);
         order.setTotalAmount(product.getPrice());
 
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+
+        // CREATE: Create notification for buyer
+        notificationService.createNotification(
+                buyer,
+                "Order Placed Successfully",
+                "Your order #" + savedOrder.getId() + " has been placed successfully.",
+                "ORDER"
+        );
+
+        // CREATE: Create notification for seller
+        notificationService.createNotification(
+                product.getSeller(),
+                "New Order Received",
+                "You have received a new order #" + savedOrder.getId() + " for: " + product.getTitle(),
+                "ORDER"
+        );
+
+        return savedOrder;
     }
 
     public List<Order> getUserOrders(User buyer) {
@@ -61,13 +81,23 @@ public class OrderService {
                     "PENDING".equals(order.getStatus())) {
                 order.setStatus("CANCELLED");
                 orderRepository.save(order);
+
+                // CREATE: Notify seller about cancellation
+                for (OrderItem item : order.getItems()) {
+                    notificationService.createNotification(
+                            item.getProduct().getSeller(),
+                            "Order Cancelled",
+                            "Order #" + orderId + " has been cancelled by the buyer.",
+                            "ORDER"
+                    );
+                }
                 return true;
             }
         }
         return false;
     }
 
-    // Seller-specific methods (Step 6)
+    // Seller-specific methods
     public List<Order> getOrdersBySeller(User seller) {
         return orderRepository.findAll().stream()
                 .filter(order -> order.getItems().stream()
@@ -105,13 +135,20 @@ public class OrderService {
             if (sellerOwnsProduct) {
                 order.setStatus(status);
                 orderRepository.save(order);
+
+                // CREATE: Notify buyer about status update
+                notificationService.createNotification(
+                        order.getBuyer(),
+                        "Order Status Updated",
+                        "Your order #" + orderId + " status has been updated to: " + status,
+                        "ORDER"
+                );
                 return true;
             }
         }
         return false;
     }
 
-    // NEW METHODS ADDED FOR PAYMENT INTEGRATION
     public Optional<Order> getOrderById(Long orderId) {
         return orderRepository.findById(orderId);
     }

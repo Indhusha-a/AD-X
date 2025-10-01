@@ -89,17 +89,37 @@
             font-size: 0.8rem;
             color: #6c757d;
         }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
-<!-- Navigation Header -->
+<!-- Navigation Header - UPDATED WITH NOTIFICATIONS -->
 <nav class="navbar">
     <div class="container">
         <a class="navbar-brand" href="/">🚀 AD-X</a>
         <div class="navbar-nav">
-                <span class="navbar-text" style="margin-right: 20px;">
-                    <i class="bi bi-cart"></i> Welcome, Buyer <span th:text="${user.firstName}"></span>!
-                </span>
+            <!-- Notification Bell - ADDED -->
+            <a class="btn btn-primary" href="/notifications" style="position: relative; margin-right: 10px;">
+                <i class="bi bi-bell"></i> Notifications
+                <span th:if="${unreadCount > 0}" class="notification-badge" th:text="${unreadCount}">0</span>
+            </a>
+
+            <span class="navbar-text" style="margin-right: 20px;">
+                <i class="bi bi-cart"></i> Welcome, Buyer <span th:text="${user.firstName}"></span>!
+            </span>
             <a class="btn btn-secondary" href="/logout">
                 <i class="bi bi-box-arrow-right"></i> Logout
             </a>
@@ -108,6 +128,10 @@
 </nav>
 
 <div class="container">
+    <!-- Success/Error Messages -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
     <div class="dashboard-header">
         <h1><i class="bi bi-cart-check"></i> Buyer Dashboard</h1>
         <p>Find the perfect advertising solutions for your business</p>
@@ -194,6 +218,15 @@
                 <strong>Payments</strong>
                 <small>Payment history</small>
             </a>
+            <!-- Notification Link - ADDED -->
+            <a href="/notifications" class="action-btn">
+                <div class="action-icon">
+                    <i class="bi bi-bell"></i>
+                </div>
+                <strong>Notifications</strong>
+                <small th:if="${unreadCount > 0}" th:text="'(' + ${unreadCount} + ' new)'">(0 new)</small>
+                <small th:unless="${unreadCount > 0}">View all</small>
+            </a>
         </div>
     </div>
 
@@ -201,13 +234,15 @@
     <div class="card fade-in">
         <h3><i class="bi bi-clock-history"></i> Recent Activity</h3>
 
-        <div th:if="${recentActivity.hasActivity}">
-            <!-- Recent Orders -->
-            <div th:each="order : ${recentActivity.recentOrders}">
+        <!-- Recent Orders Section -->
+        <div th:if="${not #lists.isEmpty(recentOrders)}">
+            <h4 style="margin-top: 20px; color: #28a745;"><i class="bi bi-bag-check"></i> Recent Orders</h4>
+            <div th:each="order : ${recentOrders}">
                 <div class="activity-item">
                     <div class="activity-icon">
                         <i class="bi bi-bag-check"
-                           th:classappend="${order.status == 'CANCELLED'} ? 'text-danger' : 'text-success'"></i>
+                           th:classappend="${order.status == 'CANCELLED'} ? 'text-danger' :
+                                          (${order.status == 'PENDING'} ? 'text-warning' : 'text-success')"></i>
                     </div>
                     <div class="activity-content">
                         <strong th:text="'Order #' + ${order.id} + ' - ' + ${order.status}">Order #123 - PENDING</strong>
@@ -221,9 +256,12 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Recent Inquiries -->
-            <div th:each="inquiry : ${recentActivity.recentInquiries}">
+        <!-- Recent Inquiries Section -->
+        <div th:if="${not #lists.isEmpty(recentInquiries)}">
+            <h4 style="margin-top: 20px; color: #17a2b8;"><i class="bi bi-chat-dots"></i> Recent Inquiries</h4>
+            <div th:each="inquiry : ${recentInquiries}">
                 <div class="activity-item">
                     <div class="activity-icon">
                         <i class="bi bi-chat-dots"
@@ -243,7 +281,7 @@
         </div>
 
         <!-- No Activity Message -->
-        <div th:unless="${recentActivity.hasActivity}" style="background: #f8f9fa; padding: 25px; border-radius: 10px; text-align: center;">
+        <div th:if="${#lists.isEmpty(recentOrders) and #lists.isEmpty(recentInquiries)}" style="background: #f8f9fa; padding: 25px; border-radius: 10px; text-align: center;">
             <i class="bi bi-info-circle" style="font-size: 2rem; color: #6c757d; margin-bottom: 15px;"></i>
             <h4 style="color: #6c757d;">No Recent Activity</h4>
             <p style="color: #6c757d;">Start browsing advertising solutions to see your activity here!</p>
@@ -284,6 +322,11 @@
             <a href="/payment/history" class="btn btn-info">
                 <i class="bi bi-credit-card"></i> Payment History
             </a>
+            <!-- Notification Button - ADDED -->
+            <a href="/notifications" class="btn btn-warning">
+                <i class="bi bi-bell"></i> Notifications
+                <span th:if="${unreadCount > 0}" class="badge badge-light" th:text="${unreadCount}">0</span>
+            </a>
         </div>
     </div>
 </div>
@@ -296,5 +339,17 @@
         <p>Buyer Dashboard | Version 1.0.0</p>
     </div>
 </footer>
+
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        });
+    });
+</script>
 </body>
 </html>

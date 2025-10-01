@@ -138,9 +138,16 @@
     <div class="container">
         <a class="navbar-brand" href="/">🚀 AD-X</a>
         <div class="navbar-nav">
-                <span class="navbar-text" style="margin-right: 20px;">
-                    <i class="bi bi-shop"></i> Welcome, Seller <span th:text="${user.firstName}"></span>!
-                </span>
+            <!-- Notification Bell -->
+            <a class="btn btn-primary" href="/notifications" style="position: relative; margin-right: 10px;">
+                <i class="bi bi-bell"></i> Notifications
+                <span th:if="${unreadCount > 0}" class="notification-badge"
+                      style="position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center;"
+                      th:text="${unreadCount}">0</span>
+            </a>
+            <span class="navbar-text" style="margin-right: 20px;">
+                <i class="bi bi-shop"></i> Welcome, Seller <span th:text="${user.firstName}"></span>!
+            </span>
             <a class="btn btn-secondary" href="/logout">
                 <i class="bi bi-box-arrow-right"></i> Logout
             </a>
