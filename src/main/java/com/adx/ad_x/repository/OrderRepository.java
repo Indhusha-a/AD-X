@@ -10,11 +10,18 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    // Buyer methods
+    // Find orders by buyer
     List<Order> findByBuyerOrderByCreatedAtDesc(User buyer);
+
+    // Find orders by buyer and status
     List<Order> findByBuyerAndStatus(User buyer, String status);
+
+    // Count orders by buyer
     Long countByBuyer(User buyer);
 
-    // Note: Seller-specific order queries are handled in OrderService
-    // since they require filtering by product seller relationship
+    // Find all orders ordered by creation date
+    List<Order> findAllByOrderByCreatedAtDesc();
+
+    // Find orders by status ordered by creation date
+    List<Order> findByStatusOrderByCreatedAtDesc(String status);
 }

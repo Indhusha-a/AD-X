@@ -119,6 +119,47 @@
             text-decoration: underline;
         }
 
+        .reviews-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+
+        .review-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #ffc107;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .review-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .star-filled {
+            color: #ffc107;
+        }
+
+        .star-empty {
+            color: #ddd;
+        }
+
+        .review-meta {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
         @media (max-width: 768px) {
             .product-container {
                 grid-template-columns: 1fr;
@@ -232,9 +273,33 @@
                     </button>
                 </form>
 
+                <!-- Review Button - FIXED: Updated URL pattern to match ReviewController -->
+                <a th:href="@{/reviews/submit/{productId}(productId=${product.id})}"
+                   class="btn btn-warning btn-large"
+                   th:if="${canReview == null or canReview}">
+                    <i class="bi bi-star"></i> Write Review
+                </a>
+
+                <!-- Disabled Review Button if user cannot review -->
+                <button th:if="${canReview != null and !canReview}"
+                        class="btn btn-secondary btn-large"
+                        disabled
+                        title="You can only review products you have purchased">
+                    <i class="bi bi-star"></i> Write Review
+                </button>
+
                 <a th:href="@{/buyer/contact/{id}(id=${product.id})}" class="btn btn-primary btn-large">
                     <i class="bi bi-chat-dots"></i> Contact Seller
                 </a>
+            </div>
+
+            <!-- Review Eligibility Message -->
+            <div th:if="${canReview != null and !canReview}"
+                 style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 5px;">
+                <p style="margin: 0; color: #856404;">
+                    <i class="bi bi-info-circle"></i>
+                    You can only review products you have purchased and haven't reviewed yet.
+                </p>
             </div>
 
             <!-- Additional Info -->
@@ -245,6 +310,61 @@
                 <p><strong>Revisions:</strong> 2 free revisions included</p>
                 <p><strong>Support:</strong> 30 days post-service support</p>
             </div>
+        </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div class="reviews-section" th:if="${reviews != null and not reviews.empty}">
+        <h2>
+            <i class="bi bi-star-fill"></i> Customer Reviews
+            <small style="color: #6c757d; font-size: 1rem;">
+                (<span th:text="${reviewCount}">0</span> reviews,
+                Average: <span th:text="${#numbers.formatDecimal(averageRating, 1, 1)}">0.0</span>★)
+            </small>
+        </h2>
+
+        <div th:each="review : ${reviews}" class="review-card">
+            <div class="review-header">
+                <div>
+                    <strong th:text="${review.buyer.firstName + ' ' + review.buyer.lastName}">Customer Name</strong>
+                    <div class="review-rating">
+                        <span th:each="i : ${#numbers.sequence(1, 5)}">
+                            <i th:class="${i <= review.rating} ? 'bi bi-star-fill star-filled' : 'bi bi-star star-empty'"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="review-meta">
+                    <span th:text="${#temporals.format(review.createdAt, 'MMM dd, yyyy')}">Jan 01, 2024</span>
+                    <span th:if="${review.isEdited}" style="color: #007bff; margin-left: 10px;">
+                        <i class="bi bi-pencil"></i> Edited
+                    </span>
+                </div>
+            </div>
+            <p style="margin: 10px 0 0 0; line-height: 1.5;" th:text="${review.comment}">
+                Review content goes here...
+            </p>
+        </div>
+    </div>
+
+    <!-- No Reviews Message -->
+    <div class="reviews-section" th:if="${reviews == null or reviews.empty}">
+        <h2><i class="bi bi-star"></i> Customer Reviews</h2>
+        <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 10px;">
+            <i class="bi bi-star" style="font-size: 3rem; color: #6c757d; margin-bottom: 15px;"></i>
+            <h4 style="color: #6c757d;">No Reviews Yet</h4>
+            <p style="color: #6c757d;">Be the first to review this advertising service!</p>
+            <!-- FIXED: Updated URL pattern here too -->
+            <a th:href="@{/reviews/submit/{productId}(productId=${product.id})}"
+               class="btn btn-warning"
+               th:if="${canReview == null or canReview}">
+                <i class="bi bi-star"></i> Write First Review
+            </a>
+            <button th:if="${canReview != null and !canReview}"
+                    class="btn btn-secondary"
+                    disabled
+                    title="You can only review products you have purchased">
+                <i class="bi bi-star"></i> Write First Review
+            </button>
         </div>
     </div>
 </div>

@@ -1,18 +1,16 @@
 package com.adx.ad_x.service;
 
-import com.adx.ad_x.model.*;
+import com.adx.ad_x.model.Payout;
+import com.adx.ad_x.model.User;
 import com.adx.ad_x.repository.PayoutRepository;
 import com.adx.ad_x.repository.PaymentRepository;
-import com.adx.ad_x.repository.FinancialTransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class PayoutService {
@@ -23,75 +21,36 @@ public class PayoutService {
     @Autowired
     private PaymentRepository paymentRepository;
 
-    @Autowired
-    private FinancialTransactionRepository financialTransactionRepository;
-
-    @Autowired
-    private SellerProfileService sellerProfileService;
-
-    // Create a payout for a seller
-    public Payout createPayout(User seller, BigDecimal amount, String payoutMethod) {
-        // Verify seller has sufficient pending earnings
-        BigDecimal pendingEarnings = calculatePendingEarnings(seller);
-        if (amount.compareTo(pendingEarnings) > 0) {
-            throw new IllegalArgumentException("Requested payout amount exceeds pending earnings");
-        }
-
-        Payout payout = new Payout(seller, amount, payoutMethod);
-        payout.setPayoutReference(generatePayoutReference());
-        payout.setPayoutPeriodStart(LocalDate.now().minusDays(7)); // Last 7 days
-        payout.setPayoutPeriodEnd(LocalDate.now());
-        payout.setEstimatedArrivalDate(LocalDate.now().plusDays(3)); // Estimated 3 business days
-
-        // Calculate transaction fee (2% or $1 minimum)
-        BigDecimal fee = amount.multiply(new BigDecimal("0.02"));
-        if (fee.compareTo(new BigDecimal("1.00")) < 0) {
-            fee = new BigDecimal("1.00");
-        }
-        payout.setTransactionFee(fee);
-        payout.calculateNetAmount();
-
-        return payoutRepository.save(payout);
-    }
-
-    // Process a payout (mark as processing/completed)
-    public Payout processPayout(Long payoutId) {
-        Optional<Payout> payoutOpt = payoutRepository.findById(payoutId);
-        if (payoutOpt.isPresent()) {
-            Payout payout = payoutOpt.get();
-
-            if ("PENDING".equals(payout.getStatus())) {
-                payout.setStatus("PROCESSING");
-                payout.setProcessedDate(LocalDateTime.now());
-
-                // Simulate payout processing (in real app, integrate with bank/PayPal)
-                boolean payoutSuccess = simulatePayoutProcessing(payout);
-
-                if (payoutSuccess) {
-                    payout.setStatus("COMPLETED");
-
-                    // Record financial transaction
-                    recordFinancialTransaction("PAYOUT", payout.getNetAmount().negate(),
-                            payout.getSeller(), "Payout to seller", payout);
-
-                    // Record commission fee transaction
-                    recordFinancialTransaction("FEE", payout.getTransactionFee(),
-                            payout.getSeller(), "Transaction fee for payout", payout);
-                } else {
-                    payout.setStatus("FAILED");
-                    payout.setFailureReason("Payout processing failed");
-                }
-
-                return payoutRepository.save(payout);
-            }
-        }
-        return null;
-    }
-
-    // Calculate pending earnings for a seller
+    // Calculate pending earnings for a seller - FIXED: Handle Object[] to Payment conversion
     public BigDecimal calculatePendingEarnings(User seller) {
-        // Use the repository method to calculate pending earnings
-        return payoutRepository.calculatePendingEarnings(seller);
+        try {
+            // Get all completed payments for this seller's products
+            List<Object[]> sellerPaymentData = paymentRepository.findCompletedPaymentsBySeller(seller);
+
+            BigDecimal totalEarnings = BigDecimal.ZERO;
+            for (Object[] paymentData : sellerPaymentData) {
+                if (paymentData[0] != null) {
+                    BigDecimal paymentAmount = (BigDecimal) paymentData[0];
+                    // Calculate seller's share (90% of payment amount, 10% platform commission)
+                    BigDecimal sellerShare = paymentAmount.multiply(new BigDecimal("0.90"));
+                    totalEarnings = totalEarnings.add(sellerShare);
+                }
+            }
+
+            // Subtract already paid out amounts
+            List<Payout> completedPayouts = payoutRepository.findBySellerAndStatus(seller, "PROCESSED");
+            for (Payout payout : completedPayouts) {
+                if (payout.getAmount() != null) {
+                    totalEarnings = totalEarnings.subtract(payout.getAmount());
+                }
+            }
+
+            return totalEarnings.compareTo(BigDecimal.ZERO) > 0 ? totalEarnings : BigDecimal.ZERO;
+
+        } catch (Exception e) {
+            // Fallback calculation
+            return BigDecimal.ZERO;
+        }
     }
 
     // Get payouts by seller
@@ -99,60 +58,66 @@ public class PayoutService {
         return payoutRepository.findBySellerOrderByCreatedAtDesc(seller);
     }
 
-    // Get payouts by status
-    public List<Payout> getPayoutsByStatus(String status) {
-        return payoutRepository.findByStatusOrderByCreatedAtDesc(status);
+    // Create payout
+    public Payout createPayout(User seller, BigDecimal amount, String method) {
+        Payout payout = new Payout();
+        payout.setSeller(seller);
+        payout.setAmount(amount);
+        payout.setPayoutMethod(method);
+        payout.setStatus("PENDING");
+
+        return payoutRepository.save(payout);
+    }
+
+    // Get total pending payouts
+    public BigDecimal getTotalPendingPayouts() {
+        try {
+            BigDecimal pending = payoutRepository.calculateTotalPendingPayouts();
+            return pending != null ? pending : BigDecimal.ZERO;
+        } catch (Exception e) {
+            List<Payout> pendingPayouts = payoutRepository.findByStatus("PENDING");
+            return pendingPayouts.stream()
+                    .map(Payout::getAmount)
+                    .filter(amount -> amount != null)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
     }
 
     // Get all payouts
     public List<Payout> getAllPayouts() {
-        return payoutRepository.findAll();
+        return payoutRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    // Get payouts by status
+    public List<Payout> getPayoutsByStatus(String status) {
+        return payoutRepository.findByStatus(status);
+    }
+
+    // Process payout
+    public boolean processPayout(Long payoutId) {
+        return payoutRepository.findById(payoutId)
+                .map(payout -> {
+                    payout.setStatus("PROCESSED");
+                    payout.setProcessedAt(LocalDateTime.now());
+                    payoutRepository.save(payout);
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    // Request payout for seller
+    public Payout requestPayout(User seller, BigDecimal amount, String method) {
+        // Check if seller has sufficient pending earnings
+        BigDecimal pendingEarnings = calculatePendingEarnings(seller);
+        if (amount.compareTo(pendingEarnings) > 0) {
+            throw new IllegalArgumentException("Requested amount exceeds available earnings");
+        }
+
+        return createPayout(seller, amount, method);
     }
 
     // Get payout by ID
-    public Optional<Payout> getPayoutById(Long id) {
-        return payoutRepository.findById(id);
-    }
-
-    // Calculate total payouts for platform
-    public BigDecimal calculateTotalPayouts(LocalDate startDate, LocalDate endDate) {
-        List<Payout> payouts = payoutRepository.findByDateRange(startDate, endDate);
-        return payouts.stream()
-                .filter(p -> "COMPLETED".equals(p.getStatus()))
-                .map(Payout::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    // Generate weekly payouts for all eligible sellers
-    public void generateWeeklyPayouts() {
-        List<User> sellers = sellerProfileService.getAllSellers();
-
-        for (User seller : sellers) {
-            BigDecimal pendingEarnings = calculatePendingEarnings(seller);
-
-            // Only generate payout if earnings exceed minimum ($10)
-            if (pendingEarnings.compareTo(new BigDecimal("10.00")) >= 0) {
-                createPayout(seller, pendingEarnings, "BANK_TRANSFER");
-            }
-        }
-    }
-
-    // Helper method to simulate payout processing
-    private boolean simulatePayoutProcessing(Payout payout) {
-        // In a real application, this would integrate with a payout service
-        // For demo purposes, we'll simulate a successful payout 98% of the time
-        return Math.random() > 0.02; // 2% failure rate for demo
-    }
-
-    // Helper method to generate unique payout reference
-    private String generatePayoutReference() {
-        return "PO_" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    // Helper method to record financial transactions
-    private void recordFinancialTransaction(String type, BigDecimal amount, User user, String description, Payout payout) {
-        FinancialTransaction transaction = new FinancialTransaction(type, amount, user, description);
-        transaction.setPayout(payout);
-        financialTransactionRepository.save(transaction);
+    public Optional<Payout> getPayoutById(Long payoutId) {
+        return payoutRepository.findById(payoutId);
     }
 }

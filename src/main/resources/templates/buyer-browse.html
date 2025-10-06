@@ -156,6 +156,27 @@
             text-decoration: none;
         }
 
+        .review-btn {
+            background: #ffc107;
+            color: #212529;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .review-btn:hover {
+            background: #e0a800;
+            color: #212529;
+            text-decoration: none;
+        }
+
         .no-products {
             text-align: center;
             padding: 60px 20px;
@@ -183,9 +204,19 @@
     <div class="container">
         <a class="navbar-brand" href="/">🚀 AD-X</a>
         <div class="navbar-nav">
-                <span class="navbar-text" style="margin-right: 20px;">
-                    <i class="bi bi-cart"></i> Buyer Dashboard
+            <!-- Notification Badge -->
+            <a href="/notifications" class="btn btn-outline-primary me-2 position-relative">
+                <i class="bi bi-bell"></i> Notifications
+                <span th:if="${notificationCount > 0}"
+                      class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                      th:text="${notificationCount}">
+                    0
                 </span>
+            </a>
+
+            <span class="navbar-text" style="margin-right: 20px;">
+                <i class="bi bi-cart"></i> Buyer Dashboard
+            </span>
             <a href="/buyer/dashboard" class="btn btn-secondary me-2">
                 <i class="bi bi-speedometer"></i> Dashboard
             </a>
@@ -271,6 +302,12 @@
                                 <i class="bi" th:classappend="${product.favorited} ? 'bi-heart-fill' : 'bi-heart'"></i>
                             </button>
                         </form>
+
+                        <!-- SIMPLIFIED: ALWAYS show review button - validation happens in ReviewController -->
+                        <a th:href="@{/reviews/submit/{id}(id=${product.id})}"
+                           class="review-btn">
+                            <i class="bi bi-star"></i> Review
+                        </a>
 
                         <a th:href="@{/buyer/product/{id}(id=${product.id})}" class="view-details-btn">
                             View Details

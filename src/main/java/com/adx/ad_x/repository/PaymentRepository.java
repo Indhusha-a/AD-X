@@ -14,35 +14,37 @@ import java.util.List;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
-    // Find payments by buyer
+    // Find by buyer
     List<Payment> findByBuyerOrderByCreatedAtDesc(User buyer);
 
-    // Find payments by status
-    List<Payment> findByStatusOrderByCreatedAtDesc(String status);
+    // Find by status
+    List<Payment> findByStatus(String status);
 
-    // Count payments by status
-    Long countByStatus(String status);
+    // Find by date range and status
+    List<Payment> findByCreatedAtBetweenAndStatus(LocalDateTime start, LocalDateTime end, String status);
 
-    // Find payments by date range
-    @Query("SELECT p FROM Payment p WHERE p.createdAt BETWEEN :startDate AND :endDate ORDER BY p.createdAt DESC")
-    List<Payment> findByDateRange(@Param("startDate") LocalDateTime startDate,
-                                  @Param("endDate") LocalDateTime endDate);
+    // Find by date range
+    List<Payment> findByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime start, LocalDateTime end);
 
-    // Calculate total revenue in date range
-    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = 'COMPLETED' AND p.createdAt BETWEEN :startDate AND :endDate")
-    BigDecimal calculateTotalRevenue(@Param("startDate") LocalDateTime startDate,
-                                     @Param("endDate") LocalDateTime endDate);
+    // Find all ordered by date
+    List<Payment> findAllByOrderByCreatedAtDesc();
 
-    // Calculate total commission in date range
-    @Query("SELECT COALESCE(SUM(p.commissionAmount), 0) FROM Payment p WHERE p.status = 'COMPLETED' AND p.createdAt BETWEEN :startDate AND :endDate")
-    BigDecimal calculateTotalCommission(@Param("startDate") LocalDateTime startDate,
-                                        @Param("endDate") LocalDateTime endDate);
+    // Calculate total revenue
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = 'COMPLETED'")
+    BigDecimal calculateTotalRevenue();
 
-    // NEW: Find completed payments by seller
-    @Query("SELECT p FROM Payment p JOIN p.order o JOIN o.items i WHERE i.product.seller = :seller AND p.status = 'COMPLETED' ORDER BY p.createdAt DESC")
-    List<Payment> findCompletedPaymentsBySeller(@Param("seller") User seller);
+    // Calculate total revenue by date range
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.createdAt BETWEEN :start AND :end AND p.status = 'COMPLETED'")
+    BigDecimal calculateTotalRevenueByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    // NEW: Calculate total earnings for a seller
-    @Query("SELECT COALESCE(SUM(p.sellerEarnings), 0) FROM Payment p JOIN p.order o JOIN o.items i WHERE i.product.seller = :seller AND p.status = 'COMPLETED'")
-    BigDecimal calculateTotalEarningsBySeller(@Param("seller") User seller);
+    // Calculate total commission
+    @Query("SELECT COALESCE(SUM(p.amount * 0.10), 0) FROM Payment p WHERE p.createdAt BETWEEN :start AND :end AND p.status = 'COMPLETED'")
+    BigDecimal calculateTotalCommission(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    // Find completed payments by seller - FIXED: Return List<Payment> instead of Object[]
+   
+
+    // In PaymentRepository.java - KEEP THIS METHOD AS IS:
+    @Query("SELECT p.amount FROM Payment p JOIN p.order o JOIN o.items oi WHERE oi.product.seller = :seller AND p.status = 'COMPLETED'")
+    List<Object[]> findCompletedPaymentsBySeller(@Param("seller") User seller);
 }

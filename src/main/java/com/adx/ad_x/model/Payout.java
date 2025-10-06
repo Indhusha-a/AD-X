@@ -2,7 +2,6 @@ package com.adx.ad_x.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,59 +12,46 @@ public class Payout {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
+    @Column(name = "payout_method", nullable = false, length = 50)
+    private String payoutMethod;
+
     @Column(nullable = false, length = 20)
-    private String status = "PENDING"; // PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED
+    private String status = "PENDING"; // PENDING, PROCESSED, FAILED
 
-    @Column(name = "payout_method", length = 50)
-    private String payoutMethod; // BANK_TRANSFER, PAYPAL, CHECK, etc.
-
-    @Column(name = "payout_reference", unique = true, length = 100)
-    private String payoutReference;
-
-    @Column(name = "transaction_fee", precision = 10, scale = 2)
-    private BigDecimal transactionFee = BigDecimal.ZERO;
-
-    @Column(name = "net_amount", precision = 10, scale = 2)
-    private BigDecimal netAmount;
-
-    @Column(name = "payout_period_start")
-    private LocalDate payoutPeriodStart;
-
-    @Column(name = "payout_period_end")
-    private LocalDate payoutPeriodEnd;
-
-    @Column(name = "processed_date")
-    private LocalDateTime processedDate;
-
-    @Column(name = "estimated_arrival_date")
-    private LocalDate estimatedArrivalDate;
-
-    @Column(name = "failure_reason", length = 500)
-    private String failureReason;
-
-    @Column(name = "bank_account_last4", length = 4)
-    private String bankAccountLast4;
-
-    @Column(name = "bank_name", length = 100)
-    private String bankName;
+    @Column(name = "processed_at")
+    private LocalDateTime processedAt;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    // ADD THESE MISSING FIELDS:
+    @Column(name = "payout_reference", length = 50)
+    private String payoutReference;
+
+    @Column(name = "net_amount", precision = 10, scale = 2)
+    private BigDecimal netAmount;
+
+    @Column(name = "transaction_fee", precision = 10, scale = 2)
+    private BigDecimal transactionFee;
+
+    @Column(name = "failure_reason", length = 500)
+    private String failureReason;
 
     // Constructors
     public Payout() {
         this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        // Generate payout reference
+        this.payoutReference = "PO_" + System.currentTimeMillis();
+        // Set default values
+        this.transactionFee = BigDecimal.ZERO;
+        this.netAmount = BigDecimal.ZERO;
     }
 
     public Payout(User seller, BigDecimal amount, String payoutMethod) {
@@ -73,21 +59,9 @@ public class Payout {
         this.seller = seller;
         this.amount = amount;
         this.payoutMethod = payoutMethod;
-        calculateNetAmount();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    // Calculate net amount after fees
-    public void calculateNetAmount() {
-        if (this.amount != null && this.transactionFee != null) {
-            this.netAmount = this.amount.subtract(this.transactionFee);
-        } else if (this.amount != null) {
-            this.netAmount = this.amount;
-        }
+        // Calculate net amount (amount - 10% platform fee)
+        this.transactionFee = amount.multiply(new BigDecimal("0.10"));
+        this.netAmount = amount.subtract(this.transactionFee);
     }
 
     // Getters and Setters
@@ -100,61 +74,35 @@ public class Payout {
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
-        calculateNetAmount();
+        // Recalculate net amount and fee when amount changes
+        if (amount != null) {
+            this.transactionFee = amount.multiply(new BigDecimal("0.10"));
+            this.netAmount = amount.subtract(this.transactionFee);
+        }
     }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
 
     public String getPayoutMethod() { return payoutMethod; }
     public void setPayoutMethod(String payoutMethod) { this.payoutMethod = payoutMethod; }
 
-    public String getPayoutReference() { return payoutReference; }
-    public void setPayoutReference(String payoutReference) { this.payoutReference = payoutReference; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public BigDecimal getTransactionFee() { return transactionFee; }
-    public void setTransactionFee(BigDecimal transactionFee) {
-        this.transactionFee = transactionFee;
-        calculateNetAmount();
-    }
-
-    public BigDecimal getNetAmount() { return netAmount; }
-    public void setNetAmount(BigDecimal netAmount) { this.netAmount = netAmount; }
-
-    public LocalDate getPayoutPeriodStart() { return payoutPeriodStart; }
-    public void setPayoutPeriodStart(LocalDate payoutPeriodStart) { this.payoutPeriodStart = payoutPeriodStart; }
-
-    public LocalDate getPayoutPeriodEnd() { return payoutPeriodEnd; }
-    public void setPayoutPeriodEnd(LocalDate payoutPeriodEnd) { this.payoutPeriodEnd = payoutPeriodEnd; }
-
-    public LocalDateTime getProcessedDate() { return processedDate; }
-    public void setProcessedDate(LocalDateTime processedDate) { this.processedDate = processedDate; }
-
-    public LocalDate getEstimatedArrivalDate() { return estimatedArrivalDate; }
-    public void setEstimatedArrivalDate(LocalDate estimatedArrivalDate) { this.estimatedArrivalDate = estimatedArrivalDate; }
-
-    public String getFailureReason() { return failureReason; }
-    public void setFailureReason(String failureReason) { this.failureReason = failureReason; }
-
-    public String getBankAccountLast4() { return bankAccountLast4; }
-    public void setBankAccountLast4(String bankAccountLast4) { this.bankAccountLast4 = bankAccountLast4; }
-
-    public String getBankName() { return bankName; }
-    public void setBankName(String bankName) { this.bankName = bankName; }
+    public LocalDateTime getProcessedAt() { return processedAt; }
+    public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    // New getters and setters
+    public String getPayoutReference() { return payoutReference; }
+    public void setPayoutReference(String payoutReference) { this.payoutReference = payoutReference; }
 
-    @Override
-    public String toString() {
-        return "Payout{" +
-                "id=" + id +
-                ", amount=" + amount +
-                ", status='" + status + '\'' +
-                ", payoutMethod='" + payoutMethod + '\'' +
-                '}';
-    }
+    public BigDecimal getNetAmount() { return netAmount; }
+    public void setNetAmount(BigDecimal netAmount) { this.netAmount = netAmount; }
+
+    public BigDecimal getTransactionFee() { return transactionFee; }
+    public void setTransactionFee(BigDecimal transactionFee) { this.transactionFee = transactionFee; }
+
+    public String getFailureReason() { return failureReason; }
+    public void setFailureReason(String failureReason) { this.failureReason = failureReason; }
 }

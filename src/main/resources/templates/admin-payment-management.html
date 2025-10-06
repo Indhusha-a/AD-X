@@ -80,19 +80,19 @@
         <h3><i class="bi bi-activity"></i> Payment Overview</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
             <div>
-                <h4 th:text="${payments.size()}">0</h4>
+                <h4 th:text="${payments != null ? payments.size() : 0}">0</h4>
                 <p>Total Payments</p>
             </div>
             <div>
-                <h4 th:text="${payments.?[status == 'COMPLETED'].size()}">0</h4>
+                <h4 th:text="${payments != null ? payments.?[status == 'COMPLETED'].size() : 0}">0</h4>
                 <p>Completed</p>
             </div>
             <div>
-                <h4 th:text="${payments.?[status == 'REFUNDED'].size()}">0</h4>
+                <h4 th:text="${payments != null ? payments.?[status == 'REFUNDED'].size() : 0}">0</h4>
                 <p>Refunded</p>
             </div>
             <div>
-                <h4 th:text="${payments.?[status == 'FAILED'].size()}">0</h4>
+                <h4 th:text="${payments != null ? payments.?[status == 'FAILED'].size() : 0}">0</h4>
                 <p>Failed</p>
             </div>
         </div>
@@ -102,14 +102,14 @@
     <div class="card fade-in">
         <h3><i class="bi bi-list-check"></i> All Payments</h3>
 
-        <div th:if="${not payments.empty}">
+        <div th:if="${payments != null and not payments.empty}">
             <div th:each="payment : ${payments}" class="payment-card fade-in"
                  th:classappend="${payment.status == 'REFUNDED'} ? 'refunded' : (${payment.status == 'FAILED'} ? 'failed' : '')">
 
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                     <div>
                         <h4 style="margin: 0;">Payment #<span th:text="${payment.transactionId}">TXN_123456</span></h4>
-                        <small class="text-muted" th:text="${#temporals.format(payment.paymentDate, 'MMM dd, yyyy HH:mm')}">
+                        <small class="text-muted" th:text="${#temporals.format(payment.createdAt, 'MMM dd, yyyy HH:mm')}">
                             Jan 01, 2024 12:00
                         </small>
                         <br>
@@ -140,24 +140,27 @@
                         <span th:text="${payment.paymentMethod}">Credit Card</span>
                     </div>
                     <div>
-                        <strong>Commission:</strong>
+                        <strong>Last Updated:</strong>
                         <br>
-                        <span th:text="'$' + ${#numbers.formatDecimal(payment.commissionAmount, 1, 2)}">$30.00</span>
+                        <span th:text="${#temporals.format(payment.updatedAt, 'MMM dd, yyyy')}">Jan 01, 2024</span>
                     </div>
                     <div>
-                        <strong>Seller Earnings:</strong>
+                        <strong>Transaction ID:</strong>
                         <br>
-                        <span th:text="'$' + ${#numbers.formatDecimal(payment.sellerEarnings, 1, 2)}">$270.00</span>
+                        <span th:text="${payment.transactionId}">TXN_123456</span>
                     </div>
                 </div>
 
                 <!-- Refund Information -->
-                <div th:if="${payment.refundedAmount != null and payment.refundedAmount.compareTo(0) > 0}"
+                <div th:if="${payment.refundAmount != null and payment.refundAmount.compareTo(0) > 0}"
                      style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px;">
                     <strong>Refunded:</strong>
-                    <span th:text="'$' + ${#numbers.formatDecimal(payment.refundedAmount, 1, 2)}">$0.00</span>
-                    <span th:if="${payment.refundDate}" th:text="'on ' + ${#temporals.format(payment.refundDate, 'MMM dd, yyyy')}">
+                    <span th:text="'$' + ${#numbers.formatDecimal(payment.refundAmount, 1, 2)}">$0.00</span>
+                    <span th:if="${payment.refundedAt}" th:text="'on ' + ${#temporals.format(payment.refundedAt, 'MMM dd, yyyy')}">
                         on Jan 01, 2024
+                    </span>
+                    <span th:if="${payment.refundReason}" th:text="' - ' + ${payment.refundReason}">
+                        - Refund reason
                     </span>
                 </div>
 
@@ -169,7 +172,7 @@
                             <div>
                                 <label for="amount-${payment.id}">Refund Amount:</label>
                                 <input type="number" th:id="'amount-' + ${payment.id}" name="amount"
-                                       th:attr="max=${payment.amount.subtract(payment.refundedAmount != null ? payment.refundedAmount : 0)}"
+                                       th:attr="max=${payment.amount.subtract(payment.refundAmount != null ? payment.refundAmount : 0)}"
                                        step="0.01" min="0.01" class="form-control" required>
                             </div>
                             <div>
@@ -189,7 +192,7 @@
             </div>
         </div>
 
-        <div th:if="${payments.empty}" style="text-align: center; padding: 40px; color: #6c757d;">
+        <div th:if="${payments == null or payments.empty}" style="text-align: center; padding: 40px; color: #6c757d;">
             <i class="bi bi-credit-card" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
             <h4>No Payments Found</h4>
             <p>When payments are processed, they will appear here.</p>

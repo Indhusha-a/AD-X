@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>AD-X - Edit Review</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .review-header {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+        .review-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .product-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid #ffc107;
+        }
+        .rating-stars {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .star {
+            font-size: 2.5rem;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .star:hover,
+        .star.active {
+            color: #ffc107;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 120px;
+        }
+        .char-count {
+            text-align: right;
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .edit-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation Header -->
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/">🚀 AD-X</a>
+        <div class="navbar-nav">
+            <a href="/buyer/dashboard" class="btn btn-outline-primary me-2">
+                <i class="bi bi-speedometer"></i> Dashboard
+            </a>
+            <a class="btn btn-secondary" href="/logout">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Review Header -->
+<div class="review-header">
+    <div class="container">
+        <h1><i class="bi bi-pencil-square"></i> Edit Your Review</h1>
+        <p>Update your feedback for this advertising service</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Success/Error Messages -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <div class="review-container fade-in">
+        <!-- Product Information -->
+        <div class="product-info" th:if="${review != null}">
+            <h4 th:text="${review.product.title}">Product Title</h4>
+            <p style="margin: 5px 0; color: #666;" th:text="${review.product.category}">Category</p>
+            <p style="margin: 0; color: #28a745; font-weight: bold;"
+               th:text="'$' + ${#numbers.formatDecimal(review.product.price, 1, 2)}">$99.99</p>
+        </div>
+
+        <!-- Edit Notice -->
+        <div class="edit-notice" th:if="${review != null and !review.canBeEdited()}">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Note:</strong> You can only edit reviews within 24 hours of posting.
+            This review can no longer be edited.
+        </div>
+
+        <form th:action="@{/reviews/edit/{id}(id=${review.id})}" method="post" th:if="${review != null and review.canBeEdited()}">
+            <!-- Rating Selection -->
+            <div class="form-group">
+                <label>Overall Rating</label>
+                <div class="rating-stars">
+                    <span class="star" onclick="setRating(1)">★</span>
+                    <span class="star" onclick="setRating(2)">★</span>
+                    <span class="star" onclick="setRating(3)">★</span>
+                    <span class="star" onclick="setRating(4)">★</span>
+                    <span class="star" onclick="setRating(5)">★</span>
+                </div>
+                <input type="hidden" id="rating" name="rating" th:value="${review.rating}" required>
+                <div style="text-align: center; margin-top: 10px;">
+                    <small id="rating-text" style="color: #6c757d;">Current rating: <span th:text="${review.rating}"></span> stars</small>
+                </div>
+            </div>
+
+            <!-- Review Comment -->
+            <div class="form-group">
+                <label for="comment">Your Review</label>
+                <textarea id="comment" name="comment" placeholder="Share your experience with this advertising service. What did you like? What could be improved?"
+                          maxlength="500" th:text="${review.comment}"></textarea>
+                <div class="char-count">
+                    <span id="char-count" th:text="${#strings.length(review.comment)}">0</span>/500 characters
+                </div>
+            </div>
+
+            <!-- Review Guidelines -->
+            <div style="background: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; border-radius: 5px;">
+                <h6 style="margin: 0 0 10px 0; color: #007bff;"><i class="bi bi-info-circle"></i> Review Guidelines</h6>
+                <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                    <li>Be honest and specific about your experience</li>
+                    <li>Focus on the service quality and results</li>
+                    <li>Keep your review respectful and professional</li>
+                    <li>You can only edit reviews within 24 hours</li>
+                </ul>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button type="submit" class="btn btn-warning btn-lg">
+                    <i class="bi bi-check-circle"></i> Update Review
+                </button>
+                <a th:href="@{/reviews/my-reviews}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left"></i> Back to Reviews
+                </a>
+            </div>
+        </form>
+
+        <!-- Read-only view if review can't be edited -->
+        <div th:if="${review != null and !review.canBeEdited()}">
+            <div style="text-align: center; padding: 30px;">
+                <i class="bi bi-clock-history" style="font-size: 3rem; color: #6c757d; margin-bottom: 20px;"></i>
+                <h4>Review Cannot Be Edited</h4>
+                <p>This review was posted more than 24 hours ago and can no longer be edited.</p>
+                <div style="margin-top: 25px;">
+                    <a th:href="@{/reviews/my-reviews}" class="btn btn-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Reviews
+                    </a>
+                    <a th:href="@{/buyer/product/{id}(id=${review.product.id})}" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-eye"></i> View Product
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <p>🚀 <strong>AD-X Advertising Platform</strong> - Edit Your Review</p>
+        <p>© 2024 AD-X. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        <p>Review System | Version 1.0.0</p>
+    </div>
+</footer>
+
+<script>
+    let currentRating = 0;
+
+    // Initialize with the review rating from Thymeleaf
+    document.addEventListener('DOMContentLoaded', function() {
+        const ratingElement = document.getElementById('rating');
+        if (ratingElement) {
+            currentRating = parseInt(ratingElement.value) || 0;
+            if (currentRating > 0) {
+                setRating(currentRating);
+            }
+        }
+    });
+
+    function setRating(rating) {
+        currentRating = rating;
+        document.getElementById('rating').value = rating;
+
+        // Update star display
+        const stars = document.querySelectorAll('.star');
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+
+        // Update rating text
+        const ratingText = document.getElementById('rating-text');
+        const texts = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+        if (ratingText && rating >= 1 && rating <= 5) {
+            ratingText.textContent = texts[rating - 1] + ' (' + rating + ' stars)';
+            ratingText.style.color = rating >= 4 ? '#28a745' : rating >= 3 ? '#ffc107' : '#dc3545';
+        }
+    }
+
+    // Character count for comment
+    document.getElementById('comment')?.addEventListener('input', function(e) {
+        const count = e.target.value.length;
+        const charCountElement = document.getElementById('char-count');
+        if (charCountElement) {
+            charCountElement.textContent = count;
+
+            if (count > 450) {
+                charCountElement.style.color = '#dc3545';
+            } else if (count > 400) {
+                charCountElement.style.color = '#ffc107';
+            } else {
+                charCountElement.style.color = '#28a745';
+            }
+        }
+    });
+
+    // Form validation
+    document.querySelector('form')?.addEventListener('submit', function(e) {
+        if (!currentRating || currentRating === 0) {
+            e.preventDefault();
+            alert('Please select a rating');
+            return false;
+        }
+    });
+</script>
+</body>
+</html>

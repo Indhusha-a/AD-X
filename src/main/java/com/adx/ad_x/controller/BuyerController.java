@@ -34,6 +34,12 @@ public class BuyerController {
     @Autowired
     private PaymentService paymentService;
 
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private ProductReviewService reviewService;
+
     // Check if user is buyer
     private boolean isBuyer(HttpSession session) {
         User user = (User) session.getAttribute("user");
@@ -50,6 +56,11 @@ public class BuyerController {
             return "redirect:/login";
         }
         User buyer = (User) session.getAttribute("user");
+
+        // Add notification count to model
+        Long notificationCount = notificationService.getUnreadNotificationCount(buyer);
+        model.addAttribute("notificationCount", notificationCount);
+
         List<Product> products;
         if (search != null && !search.trim().isEmpty()) {
             products = productService.searchProducts(search.trim());
@@ -60,6 +71,8 @@ public class BuyerController {
         } else {
             products = productService.getAllActiveProducts();
         }
+
+        // Set favorite status for products
         for (Product product : products) {
             product.setFavorited(favoriteService.isProductFavorited(buyer, product));
         }
@@ -68,18 +81,36 @@ public class BuyerController {
         return "buyer-browse";
     }
 
-    // View product details
+    // View product details - FIXED: Allow reviews for all products
     @GetMapping("/product/{id}")
     public String viewProduct(@PathVariable Long id, HttpSession session, Model model) {
         if (!isBuyer(session)) {
             return "redirect:/login";
         }
         User buyer = (User) session.getAttribute("user");
+
+        // Add notification count to model
+        Long notificationCount = notificationService.getUnreadNotificationCount(buyer);
+        model.addAttribute("notificationCount", notificationCount);
+
         Optional<Product> product = productService.getProductById(id);
         if (product.isPresent() && product.get().getActive()) {
             Product productObj = product.get();
             productObj.setFavorited(favoriteService.isProductFavorited(buyer, productObj));
+
+            // FIXED: Check if buyer can review (only prevents duplicate reviews)
+            boolean canReview = reviewService.canBuyerReviewProduct(buyer, productObj);
+            model.addAttribute("canReview", canReview);
+
+            // Add review information
+            List<ProductReview> reviews = reviewService.getProductReviews(productObj);
+            Double averageRating = reviewService.getProductAverageRating(productObj);
+            Long reviewCount = reviewService.getProductReviewCount(productObj);
+
             model.addAttribute("product", productObj);
+            model.addAttribute("reviews", reviews);
+            model.addAttribute("averageRating", averageRating);
+            model.addAttribute("reviewCount", reviewCount);
             model.addAttribute("pageTitle", "AD-X - " + productObj.getTitle());
             return "buyer-product-details";
         }
@@ -122,6 +153,11 @@ public class BuyerController {
             return "redirect:/login";
         }
         User buyer = (User) session.getAttribute("user");
+
+        // Add notification count to model
+        Long notificationCount = notificationService.getUnreadNotificationCount(buyer);
+        model.addAttribute("notificationCount", notificationCount);
+
         List<Favorite> favorites = favoriteService.getUserFavorites(buyer);
         Long favoriteCount = favoriteService.getFavoriteCount(buyer);
         model.addAttribute("favorites", favorites);
@@ -158,6 +194,11 @@ public class BuyerController {
         }
 
         User buyer = (User) session.getAttribute("user");
+
+        // Add notification count to model
+        Long notificationCount = notificationService.getUnreadNotificationCount(buyer);
+        model.addAttribute("notificationCount", notificationCount);
+
         List<Order> orders = orderService.getUserOrders(buyer);
         Long orderCount = orderService.getUserOrderCount(buyer);
 
@@ -200,6 +241,11 @@ public class BuyerController {
         }
 
         User buyer = (User) session.getAttribute("user");
+
+        // Add notification count to model
+        Long notificationCount = notificationService.getUnreadNotificationCount(buyer);
+        model.addAttribute("notificationCount", notificationCount);
+
         List<Inquiry> inquiries = inquiryService.getBuyerInquiries(buyer);
         Long inquiryCount = inquiryService.getUnreadInquiryCountForBuyer(buyer);
 
@@ -215,6 +261,13 @@ public class BuyerController {
         if (!isBuyer(session)) {
             return "redirect:/login";
         }
+
+        User buyer = (User) session.getAttribute("user");
+
+        // Add notification count to model
+        Long notificationCount = notificationService.getUnreadNotificationCount(buyer);
+        model.addAttribute("notificationCount", notificationCount);
+
         Optional<Product> product = productService.getProductById(productId);
         if (product.isPresent()) {
             model.addAttribute("product", product.get());
@@ -253,7 +306,7 @@ public class BuyerController {
         return "buyer-contact-seller";
     }
 
-    // NEW: View payment method selection
+    // View payment method selection
     @GetMapping("/payment/{orderId}")
     public String selectPaymentMethod(@PathVariable Long orderId, HttpSession session, Model model) {
         if (!isBuyer(session)) {
@@ -261,6 +314,11 @@ public class BuyerController {
         }
 
         User buyer = (User) session.getAttribute("user");
+
+        // Add notification count to model
+        Long notificationCount = notificationService.getUnreadNotificationCount(buyer);
+        model.addAttribute("notificationCount", notificationCount);
+
         Optional<Order> order = orderService.getOrderById(orderId);
 
         if (order.isPresent() && order.get().getBuyer().getId().equals(buyer.getId())) {
@@ -272,7 +330,7 @@ public class BuyerController {
         return "redirect:/buyer/purchases";
     }
 
-    // NEW: View payment history
+    // View payment history
     @GetMapping("/payment/history")
     public String paymentHistory(HttpSession session, Model model) {
         if (!isBuyer(session)) {
@@ -280,6 +338,11 @@ public class BuyerController {
         }
 
         User buyer = (User) session.getAttribute("user");
+
+        // Add notification count to model
+        Long notificationCount = notificationService.getUnreadNotificationCount(buyer);
+        model.addAttribute("notificationCount", notificationCount);
+
         List<Payment> payments = paymentService.getPaymentsByBuyer(buyer);
 
         // Calculate total spent safely
@@ -294,5 +357,39 @@ public class BuyerController {
         model.addAttribute("totalSpent", totalSpent);
         model.addAttribute("pageTitle", "AD-X - Payment History");
         return "buyer-payment-history";
+    }
+
+    // Buyer dashboard with notifications
+    @GetMapping("/dashboard")
+    public String buyerDashboard(HttpSession session, Model model) {
+        if (!isBuyer(session)) {
+            return "redirect:/login";
+        }
+
+        User buyer = (User) session.getAttribute("user");
+
+        // Add notification count to model
+        Long notificationCount = notificationService.getUnreadNotificationCount(buyer);
+        model.addAttribute("notificationCount", notificationCount);
+
+        // Get buyer statistics
+        Long favoriteCount = favoriteService.getFavoriteCount(buyer);
+        Long orderCount = orderService.getUserOrderCount(buyer);
+        Long inquiryCount = inquiryService.getUnreadInquiryCountForBuyer(buyer);
+
+        // Get recent orders and inquiries for activity feed
+        List<Order> recentOrders = orderService.getUserOrders(buyer).stream().limit(3).toList();
+        List<Inquiry> recentInquiries = inquiryService.getBuyerInquiries(buyer).stream().limit(3).toList();
+        List<ProductReview> recentReviews = reviewService.getBuyerReviews(buyer).stream().limit(3).toList();
+
+        model.addAttribute("user", buyer);
+        model.addAttribute("favoriteCount", favoriteCount);
+        model.addAttribute("orderCount", orderCount);
+        model.addAttribute("inquiryCount", inquiryCount);
+        model.addAttribute("recentOrders", recentOrders);
+        model.addAttribute("recentInquiries", recentInquiries);
+        model.addAttribute("recentReviews", recentReviews);
+        model.addAttribute("pageTitle", "AD-X - Buyer Dashboard");
+        return "buyer-dashboard";
     }
 }

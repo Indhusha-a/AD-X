@@ -38,6 +38,10 @@ public class ProductService {
         return productRepository.findBySellerAndActiveTrue(seller);
     }
 
+    public Long getTotalProductCount() {
+        return productRepository.count();
+    }
+
     public Long getProductCountBySeller(User seller) {
         return productRepository.countBySeller(seller);
     }

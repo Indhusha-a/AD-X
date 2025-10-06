@@ -138,9 +138,19 @@
     <div class="container">
         <a class="navbar-brand" href="/">🚀 AD-X</a>
         <div class="navbar-nav">
-                <span class="navbar-text" style="margin-right: 20px;">
-                    <i class="bi bi-shop"></i> Welcome, Seller <span th:text="${user.firstName}"></span>!
+            <!-- Notification Badge -->
+            <a href="/notifications" class="btn btn-outline-primary me-2 position-relative">
+                <i class="bi bi-bell"></i> Notifications
+                <span th:if="${notificationCount > 0}"
+                      class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                      th:text="${notificationCount}">
+                    0
                 </span>
+            </a>
+
+            <span class="navbar-text" style="margin-right: 20px;">
+                <i class="bi bi-shop"></i> Welcome, Seller <span th:text="${user.firstName}"></span>!
+            </span>
             <a class="btn btn-secondary" href="/logout">
                 <i class="bi bi-box-arrow-right"></i> Logout
             </a>
@@ -208,6 +218,14 @@
                 </div>
                 <h3 th:text="'$' + ${#numbers.formatDecimal(pendingEarnings, 1, 2)}">$0.00</h3>
                 <p>Pending Earnings</p>
+            </div>
+
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="bi bi-star"></i>
+                </div>
+                <h3 th:text="${recentReviews != null ? recentReviews.size() : 0}">0</h3>
+                <p>Customer Reviews</p>
             </div>
         </div>
     </div>
@@ -295,12 +313,12 @@
                 <small>View performance</small>
             </a>
 
-            <a href="/seller/profile" class="action-btn">
+            <a href="/seller/reviews" class="action-btn">
                 <div class="action-icon">
-                    <i class="bi bi-person-badge"></i>
+                    <i class="bi bi-star"></i>
                 </div>
-                <strong>Profile</strong>
-                <small>Business settings</small>
+                <strong>Reviews</strong>
+                <small>Customer feedback</small>
             </a>
         </div>
     </div>
@@ -360,8 +378,37 @@
             </div>
         </div>
 
+        <!-- Recent Reviews -->
+        <div th:if="${not recentReviews.empty}">
+            <h4 style="margin-top: 20px; color: #ffc107;"><i class="bi bi-star"></i> Recent Reviews</h4>
+            <div th:each="review : ${recentReviews}">
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="bi bi-star-fill text-warning"></i>
+                    </div>
+                    <div class="activity-content">
+                        <strong th:text="'Review from ' + ${review.buyer.firstName}">Review from Buyer</strong>
+                        <p style="margin: 5px 0 0 0; color: #666;">
+                            <span th:each="i : ${#numbers.sequence(1, 5)}">
+                                <i th:class="${i <= review.rating} ? 'bi bi-star-fill text-warning' : 'bi bi-star text-secondary'"></i>
+                            </span>
+                            - <span th:text="${review.product.title}">Product Title</span>
+                        </p>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #888; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                           th:text="${review.comment}">
+                            Review preview...
+                        </p>
+                    </div>
+                    <div class="activity-time" th:text="${#temporals.format(review.createdAt, 'MMM dd, HH:mm')}">
+                        Jan 01, 12:00
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- No Activity Message -->
-        <div th:if="${recentOrders.empty and recentInquiries.empty}" style="background: #f8f9fa; padding: 25px; border-radius: 10px; text-align: center;">
+        <div th:if="${recentOrders.empty and recentInquiries.empty and recentReviews.empty}"
+             style="background: #f8f9fa; padding: 25px; border-radius: 10px; text-align: center;">
             <i class="bi bi-info-circle" style="font-size: 2rem; color: #6c757d; margin-bottom: 15px;"></i>
             <h4 style="color: #6c757d;">No Recent Activity</h4>
             <p style="color: #6c757d;">Add your first product to start seeing activity here!</p>
@@ -371,14 +418,18 @@
         </div>
 
         <!-- View All Links -->
-        <div th:if="${not recentOrders.empty or not recentInquiries.empty}" style="margin-top: 20px; text-align: center;">
+        <div th:if="${not recentOrders.empty or not recentInquiries.empty or not recentReviews.empty}"
+             style="margin-top: 20px; text-align: center;">
             <a href="/seller/orders" class="btn btn-outline-primary btn-sm me-2" th:if="${not recentOrders.empty}">
                 <i class="bi bi-bag-check"></i> View All Orders
             </a>
-            <a href="/seller/inquiries" class="btn btn-outline-info btn-sm" th:if="${not recentInquiries.empty}">
+            <a href="/seller/inquiries" class="btn btn-outline-info btn-sm me-2" th:if="${not recentInquiries.empty}">
                 <i class="bi bi-chat-dots"></i> View All Inquiries
             </a>
-            <a href="/payment/earnings" class="btn btn-outline-success btn-sm ms-2">
+            <a href="/seller/reviews" class="btn btn-outline-warning btn-sm me-2" th:if="${not recentReviews.empty}">
+                <i class="bi bi-star"></i> View All Reviews
+            </a>
+            <a href="/payment/earnings" class="btn btn-outline-success btn-sm">
                 <i class="bi bi-cash-coin"></i> View Earnings
             </a>
         </div>
@@ -434,6 +485,9 @@
             </a>
             <a href="/seller/analytics" class="btn btn-info">
                 <i class="bi bi-graph-up"></i> View Analytics
+            </a>
+            <a href="/seller/reviews" class="btn btn-warning">
+                <i class="bi bi-star"></i> View Reviews
             </a>
         </div>
     </div>

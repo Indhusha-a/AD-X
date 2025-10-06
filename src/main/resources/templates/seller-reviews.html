@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>AD-X - Customer Reviews</title>
+  <link href="/css/style.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    .reviews-header {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      padding: 40px 0;
+      text-align: center;
+    }
+    .review-stats {
+      background: white;
+      border-radius: 10px;
+      padding: 25px;
+      margin: 20px 0;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .average-rating {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #28a745;
+      margin-bottom: 10px;
+    }
+    .rating-stars {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin: 10px 0;
+    }
+    .star-filled {
+      color: #ffc107;
+    }
+    .star-empty {
+      color: #ddd;
+    }
+    .review-card {
+      background: white;
+      border-radius: 10px;
+      padding: 25px;
+      margin: 20px 0;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      border-left: 4px solid #28a745;
+    }
+    .review-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 15px;
+    }
+    .review-product {
+      flex: 1;
+    }
+    .review-rating {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .review-meta {
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+    .review-content {
+      margin: 15px 0;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      margin: 40px 0;
+    }
+    .empty-state i {
+      font-size: 4rem;
+      color: #6c757d;
+      margin-bottom: 20px;
+    }
+    .review-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+<!-- Navigation Header -->
+<nav class="navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">🚀 AD-X</a>
+    <div class="navbar-nav">
+      <!-- Notification Badge -->
+      <a href="/notifications" class="btn btn-outline-primary me-2 position-relative">
+        <i class="bi bi-bell"></i> Notifications
+        <span th:if="${notificationCount > 0}"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              th:text="${notificationCount}">
+                    0
+                </span>
+      </a>
+
+      <span class="navbar-text" style="margin-right: 20px;">
+                <i class="bi bi-shop"></i> Welcome, Seller <span th:text="${user.firstName}"></span>!
+            </span>
+      <a href="/seller/dashboard" class="btn btn-outline-primary me-2">
+        <i class="bi bi-speedometer"></i> Dashboard
+      </a>
+      <a class="btn btn-secondary" href="/logout">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- Reviews Header -->
+<div class="reviews-header">
+  <div class="container">
+    <h1><i class="bi bi-star-fill"></i> Customer Reviews</h1>
+    <p>See what customers are saying about your services</p>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Success/Error Messages -->
+  <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+  <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+  <!-- Review Statistics -->
+  <div class="review-stats fade-in">
+    <div class="average-rating" th:text="${#numbers.formatDecimal(averageRating, 1, 1)}">4.5</div>
+    <div class="rating-stars">
+            <span th:each="i : ${#numbers.sequence(1, 5)}">
+                <i th:class="${i <= averageRating} ? 'bi bi-star-fill star-filled' : 'bi bi-star star-empty'"></i>
+            </span>
+    </div>
+    <p style="margin: 10px 0 0 0; color: #666;">
+      Based on <strong th:text="${reviewCount}">0</strong> customer reviews
+    </p>
+  </div>
+
+  <!-- Reviews List -->
+  <div class="card fade-in">
+    <h3><i class="bi bi-list-stars"></i> Customer Feedback</h3>
+
+    <div th:if="${reviews != null and not reviews.empty}">
+      <div th:each="review : ${reviews}" class="review-card">
+        <div class="review-header">
+          <div class="review-product">
+            <h4 style="margin: 0 0 5px 0;">
+              <span th:text="${review.product.title}">Product Title</span>
+            </h4>
+            <div class="review-rating">
+                            <span th:each="i : ${#numbers.sequence(1, 5)}">
+                                <i th:class="${i <= review.rating} ? 'bi bi-star-fill star-filled' : 'bi bi-star star-empty'"></i>
+                            </span>
+              <span style="margin-left: 10px; font-weight: bold; color: #333;"
+                    th:text="${review.rating} + '.0'">5.0</span>
+            </div>
+            <div class="review-meta">
+              By <strong th:text="${review.buyer.firstName + ' ' + review.buyer.lastName}">Customer Name</strong>
+              on <span th:text="${#temporals.format(review.createdAt, 'MMM dd, yyyy')}">Jan 01, 2024</span>
+              <span th:if="${review.isEdited}" style="color: #007bff; margin-left: 10px;">
+                                <i class="bi bi-pencil"></i> Edited
+                            </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-content">
+          <p style="margin: 0; line-height: 1.6; color: #333;" th:text="${review.comment}">
+            Review comment goes here...
+          </p>
+        </div>
+
+        <!-- REMOVED: Response Section - Seller can only view reviews, not reply -->
+        <!-- If sellers need to respond, they can use the inquiries system -->
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${reviews == null or reviews.empty}" class="empty-state">
+      <i class="bi bi-star"></i>
+      <h3>No Reviews Yet</h3>
+      <p>Your products haven't received any reviews yet. Keep providing great service and reviews will come!</p>
+      <div style="margin-top: 20px;">
+        <a href="/seller/products" class="btn btn-primary">
+          <i class="bi bi-box-seam"></i> Manage Products
+        </a>
+        <a href="/seller/analytics" class="btn btn-outline-primary ms-2">
+          <i class="bi bi-graph-up"></i> View Analytics
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div style="text-align: center; margin-top: 30px;">
+    <a href="/seller/dashboard" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+    <a href="/seller/analytics" class="btn btn-primary ms-2">
+      <i class="bi bi-graph-up"></i> View Analytics
+    </a>
+    <a href="/seller/inquiries" class="btn btn-info ms-2">
+      <i class="bi bi-chat-dots"></i> Customer Inquiries
+    </a>
+    <a href="/seller/products" class="btn btn-success ms-2">
+      <i class="bi bi-plus-circle"></i> Add New Product
+    </a>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-content">
+    <p>🚀 <strong>AD-X Advertising Platform</strong> - Customer Reviews</p>
+    <p>© 2024 AD-X. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    <p>Review Management | Version 1.0.0</p>
+  </div>
+</footer>
+
+<script>
+  // Auto-refresh for new reviews (optional)
+  setInterval(() => {
+    // You can add AJAX refresh here if needed
+    console.log('Checking for new reviews...');
+  }, 30000);
+
+  // Smooth scrolling for better UX
+  document.addEventListener('DOMContentLoaded', function() {
+    const reviewCards = document.querySelectorAll('.review-card');
+    reviewCards.forEach((card, index) => {
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, index * 100);
+    });
+
+    // Initialize with hidden state for animation
+    document.querySelectorAll('.review-card').forEach(card => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = 'all 0.5s ease';
+    });
+  });
+</script>
+</body>
+</html>

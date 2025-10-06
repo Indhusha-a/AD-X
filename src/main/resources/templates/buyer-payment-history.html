@@ -93,7 +93,7 @@
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                 <div>
                     <h4 style="margin: 0;">Payment #<span th:text="${payment.transactionId}">TXN_123456</span></h4>
-                    <small class="text-muted" th:text="${#temporals.format(payment.paymentDate, 'MMM dd, yyyy HH:mm')}">
+                    <small class="text-muted" th:text="${#temporals.format(payment.createdAt, 'MMM dd, yyyy HH:mm')}">
                         Jan 01, 2024 12:00
                     </small>
                     <br>
@@ -122,23 +122,26 @@
                     <span th:text="${payment.paymentMethod}">Credit Card</span>
                 </div>
                 <div>
-                    <strong>Gateway:</strong>
+                    <strong>Transaction ID:</strong>
                     <br>
-                    <span th:text="${payment.paymentGateway}">Stripe</span>
+                    <span th:text="${payment.transactionId}">TXN_123456</span>
                 </div>
                 <div>
-                    <strong>Commission:</strong>
+                    <strong>Last Updated:</strong>
                     <br>
-                    <span th:text="'$' + ${#numbers.formatDecimal(payment.commissionAmount, 1, 2)}">$30.00</span>
+                    <span th:text="${#temporals.format(payment.updatedAt, 'MMM dd, yyyy')}">Jan 01, 2024</span>
                 </div>
             </div>
 
-            <div th:if="${payment.refundedAmount != null and payment.refundedAmount.compareTo(0) > 0}"
+            <div th:if="${payment.refundAmount != null and payment.refundAmount.compareTo(0) > 0}"
                  style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px;">
                 <strong>Refunded:</strong>
-                <span th:text="'$' + ${#numbers.formatDecimal(payment.refundedAmount, 1, 2)}">$0.00</span>
-                <span th:if="${payment.refundDate}" th:text="'on ' + ${#temporals.format(payment.refundDate, 'MMM dd, yyyy')}">
+                <span th:text="'$' + ${#numbers.formatDecimal(payment.refundAmount, 1, 2)}">$0.00</span>
+                <span th:if="${payment.refundedAt}" th:text="'on ' + ${#temporals.format(payment.refundedAt, 'MMM dd, yyyy')}">
                     on Jan 01, 2024
+                </span>
+                <span th:if="${payment.refundReason}" th:text="' - ' + ${payment.refundReason}">
+                    - Refund reason
                 </span>
             </div>
 

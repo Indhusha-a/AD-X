@@ -74,6 +74,10 @@
 </div>
 
 <div class="container">
+    <!-- Success/Error Messages -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
     <!-- Financial Statistics -->
     <div class="card fade-in">
         <h3><i class="bi bi-activity"></i> Financial Overview</h3>
@@ -103,31 +107,31 @@
                 <div class="stat-icon">
                     <i class="bi bi-credit-card"></i>
                 </div>
-                <h3 th:text="${stats.totalPayments}">0</h3>
-                <p>Total Payments</p>
+                <h3 th:text="${totalTransactions != null ? totalTransactions : 0}">0</h3>
+                <p>Total Transactions</p>
             </div>
         </div>
     </div>
 
-    <!-- Payment Statistics -->
+    <!-- Additional Financial Stats -->
     <div class="card fade-in">
-        <h3><i class="bi bi-bar-chart"></i> Payment Statistics</h3>
+        <h3><i class="bi bi-bar-chart"></i> Financial Summary</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
             <div>
-                <h4 th:text="${stats.completedPayments}" style="color: #28a745;">0</h4>
-                <p>Completed</p>
+                <h4 th:text="'$' + ${#numbers.formatDecimal(totalRevenue != null ? totalRevenue : 0, 1, 2)}" style="color: #28a745;">$0.00</h4>
+                <p>Total Revenue</p>
             </div>
             <div>
-                <h4 th:text="${stats.pendingPayments}" style="color: #ffc107;">0</h4>
-                <p>Pending</p>
+                <h4 th:text="'$' + ${#numbers.formatDecimal(pendingPayouts != null ? pendingPayouts : 0, 1, 2)}" style="color: #ffc107;">$0.00</h4>
+                <p>Pending Payouts</p>
             </div>
             <div>
-                <h4 th:text="${stats.failedPayments}" style="color: #dc3545;">0</h4>
-                <p>Failed</p>
+                <h4 th:text="${recentPayments != null ? recentPayments.size() : 0}" style="color: #667eea;">0</h4>
+                <p>Recent Payments</p>
             </div>
             <div>
-                <h4 th:text="${stats.refundedPayments}" style="color: #6c757d;">0</h4>
-                <p>Refunded</p>
+                <h4 th:text="${recentPayouts != null ? recentPayouts.size() : 0}" style="color: #17a2b8;">0</h4>
+                <p>Pending Payouts</p>
             </div>
         </div>
     </div>
@@ -153,7 +157,7 @@
         <h3><i class="bi bi-clock-history"></i> Recent Activity</h3>
 
         <!-- Recent Payments -->
-        <div th:if="${not recentPayments.empty}">
+        <div th:if="${recentPayments != null and not recentPayments.empty}">
             <h4 style="color: #28a745; margin-top: 20px;"><i class="bi bi-credit-card"></i> Recent Payments</h4>
             <div th:each="payment : ${recentPayments}">
                 <div class="payment-card">
@@ -167,7 +171,12 @@
                         <div style="text-align: right;">
                             <strong th:text="'$' + ${#numbers.formatDecimal(payment.amount, 1, 2)}">$299.99</strong>
                             <br>
-                            <small th:text="'Commission: $' + ${#numbers.formatDecimal(payment.commissionAmount, 1, 2)}">$30.00</small>
+                            <small th:text="${payment.status}"
+                                   th:classappend="${payment.status == 'COMPLETED'} ? 'text-success' :
+                                                  (${payment.status == 'PENDING'} ? 'text-warning' :
+                                                  (${payment.status == 'FAILED'} ? 'text-danger' : 'text-secondary'))">
+                                COMPLETED
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -175,7 +184,7 @@
         </div>
 
         <!-- Pending Payouts -->
-        <div th:if="${not recentPayouts.empty}">
+        <div th:if="${recentPayouts != null and not recentPayouts.empty}">
             <h4 style="color: #ffc107; margin-top: 20px;"><i class="bi bi-cash-coin"></i> Pending Payouts</h4>
             <div th:each="payout : ${recentPayouts}">
                 <div class="payout-card">
@@ -203,7 +212,8 @@
         </div>
 
         <!-- No Activity Message -->
-        <div th:if="${recentPayments.empty and recentPayouts.empty}" style="text-align: center; padding: 40px; color: #6c757d;">
+        <div th:if="${(recentPayments == null or recentPayments.empty) and (recentPayouts == null or recentPayouts.empty)}"
+             style="text-align: center; padding: 40px; color: #6c757d;">
             <i class="bi bi-activity" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
             <h4>No Recent Activity</h4>
             <p>Financial activity will appear here as users make payments and request payouts.</p>
@@ -219,5 +229,17 @@
         <p>Financial Dashboard | Version 1.0.0</p>
     </div>
 </footer>
+
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        });
+    });
+</script>
 </body>
 </html>

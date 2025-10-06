@@ -52,44 +52,8 @@ public class DashboardController {
         }
     }
 
-    @GetMapping("/buyer/dashboard")
-    public String buyerDashboard(HttpSession session, Model model) {
-        User user = (User) session.getAttribute("user");
-        if (user == null) {
-            return "redirect:/login";
-        }
-
-        // Allow only BUYER role to access buyer dashboard
-        if (!"BUYER".equals(user.getRole())) {
-            return "redirect:/dashboard"; // Redirect to role-appropriate dashboard
-        }
-
-        // Get stats for the buyer
-        Long favoriteCount = favoriteService.getFavoriteCount(user);
-        Long orderCount = orderService.getUserOrderCount(user);
-        Long inquiryCount = inquiryService.getUnreadInquiryCountForBuyer(user);
-
-        // Get payment count
-        List<com.adx.ad_x.model.Order> orders = orderService.getUserOrders(user);
-        Long paymentCount = (long) orders.stream()
-                .filter(order -> order.getPayment() != null)
-                .count();
-
-        // Get recent activity data
-        Map<String, Object> recentActivity = getRecentActivity(user);
-
-        model.addAttribute("user", user);
-        model.addAttribute("favoriteCount", favoriteCount);
-        model.addAttribute("orderCount", orderCount);
-        model.addAttribute("inquiryCount", inquiryCount);
-        model.addAttribute("paymentCount", paymentCount);
-        model.addAttribute("recentActivity", recentActivity);
-        model.addAttribute("pageTitle", "AD-X - Buyer Dashboard");
-        return "buyer-dashboard";
-    }
-
-    // REMOVED: sellerDashboard method - moved to SellerController
-    // @GetMapping("/seller/dashboard") - This is causing the conflict
+    // REMOVED: buyerDashboard method - moved to BuyerController
+    // This was causing the conflict with BuyerController
 
     // Generic dashboard for any role (fallback)
     @GetMapping("/generic-dashboard")

@@ -84,46 +84,46 @@ public class DataLoader implements CommandLineRunner {
         // Create sample products if none exist
         if (productRepository.count() == 0) {
             // Product 1
-            Product product1 = new Product(
-                    "Social Media Campaign Package",
-                    "Boost your brand with a 30-day social media campaign across Instagram, Facebook, and TikTok. Includes content creation, scheduling, and performance analytics.",
-                    new BigDecimal("299.99"),
-                    "Social Media",
-                    seller
-            );
+            Product product1 = new Product();
+            product1.setTitle("Social Media Campaign Package");
+            product1.setDescription("Boost your brand with a 30-day social media campaign across Instagram, Facebook, and TikTok. Includes content creation, scheduling, and performance analytics.");
+            product1.setPrice(new BigDecimal("299.99"));
+            product1.setCategory("Social Media");
+            product1.setSeller(seller);
+            product1.setActive(true);
             product1.setImageUrl("https://via.placeholder.com/300x200?text=Social+Media");
             productRepository.save(product1);
 
             // Product 2
-            Product product2 = new Product(
-                    "Billboard Advertising - City Center",
-                    "High-visibility billboard in downtown area. 4-week display with digital rotation. Perfect for local business awareness.",
-                    new BigDecimal("899.00"),
-                    "Outdoor",
-                    seller
-            );
+            Product product2 = new Product();
+            product2.setTitle("Billboard Advertising - City Center");
+            product2.setDescription("High-visibility billboard in downtown area. 4-week display with digital rotation. Perfect for local business awareness.");
+            product2.setPrice(new BigDecimal("899.00"));
+            product2.setCategory("Outdoor");
+            product2.setSeller(seller);
+            product2.setActive(true);
             product2.setImageUrl("https://via.placeholder.com/300x200?text=Billboard");
             productRepository.save(product2);
 
             // Product 3
-            Product product3 = new Product(
-                    "Google Ads Management Service",
-                    "Professional Google Ads campaign management. Includes keyword research, ad creation, A/B testing, and performance optimization.",
-                    new BigDecimal("499.99"),
-                    "Digital Marketing",
-                    seller
-            );
+            Product product3 = new Product();
+            product3.setTitle("Google Ads Management Service");
+            product3.setDescription("Professional Google Ads campaign management. Includes keyword research, ad creation, A/B testing, and performance optimization.");
+            product3.setPrice(new BigDecimal("499.99"));
+            product3.setCategory("Digital Marketing");
+            product3.setSeller(seller);
+            product3.setActive(true);
             product3.setImageUrl("https://via.placeholder.com/300x200?text=Google+Ads");
             productRepository.save(product3);
 
             // Product 4
-            Product product4 = new Product(
-                    "Email Marketing Campaign",
-                    "Complete email marketing solution including list building, template design, automation setup, and performance tracking.",
-                    new BigDecimal("199.99"),
-                    "Email Marketing",
-                    seller
-            );
+            Product product4 = new Product();
+            product4.setTitle("Email Marketing Campaign");
+            product4.setDescription("Complete email marketing solution including list building, template design, automation setup, and performance tracking.");
+            product4.setPrice(new BigDecimal("199.99"));
+            product4.setCategory("Email Marketing");
+            product4.setSeller(seller);
+            product4.setActive(true);
             product4.setImageUrl("https://via.placeholder.com/300x200?text=Email+Marketing");
             productRepository.save(product4);
 
@@ -176,13 +176,13 @@ public class DataLoader implements CommandLineRunner {
             sellerProfileRepository.save(sellerProfile2);
 
             // Add products for second seller
-            Product product5 = new Product(
-                    "SEO Optimization Package",
-                    "Comprehensive SEO audit and optimization service. Improve your search engine rankings and organic traffic.",
-                    new BigDecimal("799.99"),
-                    "SEO Services",
-                    seller2
-            );
+            Product product5 = new Product();
+            product5.setTitle("SEO Optimization Package");
+            product5.setDescription("Comprehensive SEO audit and optimization service. Improve your search engine rankings and organic traffic.");
+            product5.setPrice(new BigDecimal("799.99"));
+            product5.setCategory("SEO Services");
+            product5.setSeller(seller2);
+            product5.setActive(true);
             productRepository.save(product5);
 
             System.out.println("Second seller created: sarah@marketingpros.com / seller123");
@@ -238,34 +238,46 @@ public class DataLoader implements CommandLineRunner {
 
     private void createPaymentTestData(User buyer, User seller, Order order) {
         try {
-            // Create completed payment
-            Payment payment = new Payment(order, buyer, order.getTotalAmount(), "CREDIT_CARD");
+            // Create completed payment using the default constructor and setters
+            Payment payment = new Payment();
+            payment.setOrder(order);
+            payment.setBuyer(buyer);
+            payment.setAmount(order.getTotalAmount());
+            payment.setPaymentMethod("CREDIT_CARD");
             payment.setStatus("COMPLETED");
             payment.setTransactionId("TXN_" + System.currentTimeMillis());
-            payment.setPaymentGateway("SIMULATED");
-            payment.setPaymentDate(LocalDateTime.now().minusDays(2));
-            payment.setGatewayResponse("Payment processed successfully");
-            payment.calculateCommissionAndEarnings();
+            payment.setCreatedAt(LocalDateTime.now().minusDays(2));
             paymentRepository.save(payment);
 
             // Link payment to order
             order.setPayment(payment);
             orderRepository.save(order);
 
-            // Create financial transaction
-            FinancialTransaction transaction = new FinancialTransaction(
-                    "PAYMENT", order.getTotalAmount(), buyer, "Payment for Order #" + order.getId());
-            transaction.setPayment(payment);
-            financialTransactionRepository.save(transaction);
+            // Create financial transaction if repository exists
+            if (financialTransactionRepository != null) {
+                try {
+                    FinancialTransaction transaction = new FinancialTransaction();
+                    transaction.setType("PAYMENT"); // FIXED: Use setType() instead of setTransactionType()
+                    transaction.setAmount(order.getTotalAmount());
+                    transaction.setUser(buyer);
+                    transaction.setDescription("Payment for Order #" + order.getId());
+                    transaction.setPayment(payment);
+                    transaction.setCreatedAt(LocalDateTime.now().minusDays(2));
+                    transaction.setTransactionDate(LocalDateTime.now().minusDays(2));
+                    financialTransactionRepository.save(transaction);
+                } catch (Exception e) {
+                    System.out.println("Financial transaction creation skipped: " + e.getMessage());
+                }
+            }
 
-            // Create payout for seller
-            Payout payout = new Payout(seller, payment.getSellerEarnings(), "BANK_TRANSFER");
+            // Create payout for seller using the default constructor and setters
+            Payout payout = new Payout();
+            payout.setSeller(seller);
+            payout.setAmount(order.getTotalAmount().multiply(new BigDecimal("0.90"))); // 90% to seller, 10% commission
+            payout.setPayoutMethod("BANK_TRANSFER");
             payout.setStatus("COMPLETED");
-            payout.setPayoutReference("PO_" + System.currentTimeMillis());
-            payout.setProcessedDate(LocalDateTime.now().minusDays(1));
-            payout.setPayoutPeriodStart(LocalDateTime.now().minusDays(7).toLocalDate());
-            payout.setPayoutPeriodEnd(LocalDateTime.now().toLocalDate());
-            payout.calculateNetAmount();
+            payout.setCreatedAt(LocalDateTime.now().minusDays(1));
+            payout.setProcessedAt(LocalDateTime.now().minusDays(1));
             payoutRepository.save(payout);
 
             System.out.println("Payment test data created for Order #" + order.getId());

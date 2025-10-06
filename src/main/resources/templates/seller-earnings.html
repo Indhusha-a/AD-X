@@ -102,15 +102,15 @@
                 <div class="stat-icon">
                     <i class="bi bi-cash-coin"></i>
                 </div>
-                <h3 th:text="'$' + ${#numbers.formatDecimal(profile != null ? profile.totalRevenue : 0, 1, 2)}">$0.00</h3>
-                <p>Total Revenue</p>
+                <h3 th:text="'$' + ${#numbers.formatDecimal(totalEarned, 1, 2)}">$0.00</h3>
+                <p>Total Earned</p>
             </div>
             <div class="stat-card warning">
                 <div class="stat-icon">
                     <i class="bi bi-bag-check"></i>
                 </div>
-                <h3 th:text="${profile != null ? profile.totalOrders : 0}">0</h3>
-                <p>Total Orders</p>
+                <h3 th:text="${payouts != null ? payouts.size() : 0}">0</h3>
+                <p>Total Payouts</p>
             </div>
             <div class="stat-card info">
                 <div class="stat-icon">
@@ -123,7 +123,7 @@
     </div>
 
     <!-- Payout Request Form -->
-    <div class="card fade-in" th:if="${pendingEarnings.compareTo(10) >= 0}">
+    <div class="card fade-in" th:if="${pendingEarnings != null and pendingEarnings.compareTo(new java.math.BigDecimal(10)) >= 0}">
         <h3><i class="bi bi-bank"></i> Request Payout</h3>
         <p>Available for payout: <strong th:text="'$' + ${#numbers.formatDecimal(pendingEarnings, 1, 2)}">$0.00</strong></p>
         <p><small class="text-muted">Minimum payout amount: $10.00</small></p>
@@ -149,7 +149,7 @@
         </form>
     </div>
 
-    <div class="card fade-in" th:if="${pendingEarnings.compareTo(10) < 0}">
+    <div class="card fade-in" th:if="${pendingEarnings != null and pendingEarnings.compareTo(new java.math.BigDecimal(10)) < 0}">
         <div class="alert alert-info">
             <h4><i class="bi bi-info-circle"></i> Payout Eligibility</h4>
             <p>You need at least $10.00 in pending earnings to request a payout.</p>
@@ -161,20 +161,20 @@
     <div class="card fade-in">
         <h3><i class="bi bi-clock-history"></i> Payout History</h3>
 
-        <div th:if="${not payouts.empty}">
+        <div th:if="${payouts != null and not payouts.empty}">
             <div th:each="payout : ${payouts}" class="payout-card fade-in"
-                 th:classappend="${payout.status == 'COMPLETED'} ? 'completed' : (${payout.status == 'FAILED'} ? 'failed' : '')">
+                 th:classappend="${payout.status == 'PROCESSED'} ? 'completed' : (${payout.status == 'FAILED'} ? 'failed' : '')">
 
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                     <div>
-                        <h4 style="margin: 0;">Payout #<span th:text="${payout.payoutReference}">PO_123456</span></h4>
+                        <h4 style="margin: 0;">Payout #<span th:text="${payout.id}">PO_123456</span></h4>
                         <small class="text-muted" th:text="${#temporals.format(payout.createdAt, 'MMM dd, yyyy')}">
                             Jan 01, 2024
                         </small>
                     </div>
                     <div>
                         <span class="payout-status"
-                              th:classappend="${payout.status == 'COMPLETED'} ? 'status-completed' :
+                              th:classappend="${payout.status == 'PROCESSED'} ? 'status-completed' :
                                              (${payout.status == 'PROCESSING'} ? 'status-processing' :
                                              (${payout.status == 'FAILED'} ? 'status-failed' : 'status-pending'))"
                               th:text="${payout.status}">
@@ -206,8 +206,8 @@
                     </div>
                 </div>
 
-                <div th:if="${payout.processedDate}" style="font-size: 0.9rem; color: #666;">
-                    Processed: <span th:text="${#temporals.format(payout.processedDate, 'MMM dd, yyyy HH:mm')}">Jan 01, 2024 12:00</span>
+                <div th:if="${payout.processedAt}" style="font-size: 0.9rem; color: #666;">
+                    Processed: <span th:text="${#temporals.format(payout.processedAt, 'MMM dd, yyyy HH:mm')}">Jan 01, 2024 12:00</span>
                 </div>
 
                 <div th:if="${payout.failureReason}" style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-top: 10px;">
@@ -216,35 +216,10 @@
             </div>
         </div>
 
-        <div th:if="${payouts.empty}" style="text-align: center; padding: 40px; color: #6c757d;">
+        <div th:if="${payouts == null or payouts.empty}" style="text-align: center; padding: 40px; color: #6c757d;">
             <i class="bi bi-credit-card" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
             <h4>No Payout History</h4>
             <p>When you receive payouts, they will appear here.</p>
-        </div>
-    </div>
-
-    <!-- Recent Payments -->
-    <div class="card fade-in" th:if="${not recentPayments.empty}">
-        <h3><i class="bi bi-receipt"></i> Recent Payments</h3>
-        <div style="max-height: 300px; overflow-y: auto;">
-            <table class="table" style="font-size: 0.9rem;">
-                <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Order</th>
-                    <th>Amount</th>
-                    <th>Earnings</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="payment : ${recentPayments}">
-                    <td th:text="${#temporals.format(payment.paymentDate, 'MMM dd')}">Jan 01</td>
-                    <td>#<span th:text="${payment.order.id}">123</span></td>
-                    <td th:text="'$' + ${#numbers.formatDecimal(payment.amount, 1, 2)}">$99.99</td>
-                    <td th:text="'$' + ${#numbers.formatDecimal(payment.sellerEarnings, 1, 2)}">$90.00</td>
-                </tr>
-                </tbody>
-            </table>
         </div>
     </div>
 </div>

@@ -31,6 +31,9 @@
         .stat-card.danger {
             border-left-color: #dc3545;
         }
+        .stat-card.primary {
+            border-left-color: #667eea;
+        }
         .stat-icon {
             font-size: 2.5rem;
             margin-bottom: 10px;
@@ -40,6 +43,7 @@
         .stat-card.warning .stat-icon { color: #ffc107; }
         .stat-card.info .stat-icon { color: #17a2b8; }
         .stat-card.danger .stat-icon { color: #dc3545; }
+        .stat-card.primary .stat-icon { color: #667eea; }
         .quick-actions {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -89,6 +93,20 @@
             font-size: 0.8rem;
             color: #6c757d;
         }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -97,9 +115,19 @@
     <div class="container">
         <a class="navbar-brand" href="/">🚀 AD-X</a>
         <div class="navbar-nav">
-                <span class="navbar-text" style="margin-right: 20px;">
-                    <i class="bi bi-cart"></i> Welcome, Buyer <span th:text="${user.firstName}"></span>!
+            <!-- Notification Badge -->
+            <a href="/notifications" class="btn btn-outline-primary me-2 position-relative">
+                <i class="bi bi-bell"></i> Notifications
+                <span th:if="${notificationCount > 0}"
+                      class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                      th:text="${notificationCount}">
+                    0
                 </span>
+            </a>
+
+            <span class="navbar-text" style="margin-right: 20px;">
+                <i class="bi bi-cart"></i> Welcome, Buyer <span th:text="${user.firstName}"></span>!
+            </span>
             <a class="btn btn-secondary" href="/logout">
                 <i class="bi bi-box-arrow-right"></i> Logout
             </a>
@@ -152,6 +180,13 @@
                 <h3 th:text="${paymentCount} ?: 0">0</h3>
                 <p>Payments</p>
             </div>
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="bi bi-star"></i>
+                </div>
+                <h3 th:text="${recentReviews != null ? recentReviews.size() : 0}">0</h3>
+                <p>My Reviews</p>
+            </div>
         </div>
     </div>
 
@@ -194,6 +229,13 @@
                 <strong>Payments</strong>
                 <small>Payment history</small>
             </a>
+            <a href="/reviews/my-reviews" class="action-btn">
+                <div class="action-icon">
+                    <i class="bi bi-star"></i>
+                </div>
+                <strong>My Reviews</strong>
+                <small>Product reviews</small>
+            </a>
         </div>
     </div>
 
@@ -201,9 +243,9 @@
     <div class="card fade-in">
         <h3><i class="bi bi-clock-history"></i> Recent Activity</h3>
 
-        <div th:if="${recentActivity.hasActivity}">
+        <div th:if="${not recentOrders.empty or not recentInquiries.empty or not recentReviews.empty}">
             <!-- Recent Orders -->
-            <div th:each="order : ${recentActivity.recentOrders}">
+            <div th:each="order : ${recentOrders}">
                 <div class="activity-item">
                     <div class="activity-icon">
                         <i class="bi bi-bag-check"
@@ -223,7 +265,7 @@
             </div>
 
             <!-- Recent Inquiries -->
-            <div th:each="inquiry : ${recentActivity.recentInquiries}">
+            <div th:each="inquiry : ${recentInquiries}">
                 <div class="activity-item">
                     <div class="activity-icon">
                         <i class="bi bi-chat-dots"
@@ -240,10 +282,32 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Recent Reviews -->
+            <div th:each="review : ${recentReviews}">
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="bi bi-star-fill text-warning"></i>
+                    </div>
+                    <div class="activity-content">
+                        <strong th:text="'Review for ' + ${review.product.title}">Review for Product</strong>
+                        <p style="margin: 5px 0 0 0; color: #666;">
+                            Rating:
+                            <span th:each="i : ${#numbers.sequence(1, 5)}">
+                                <i th:class="${i <= review.rating} ? 'bi bi-star-fill text-warning' : 'bi bi-star text-secondary'"></i>
+                            </span>
+                        </p>
+                    </div>
+                    <div class="activity-time" th:text="${#temporals.format(review.createdAt, 'MMM dd, HH:mm')}">
+                        Jan 01, 12:00
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- No Activity Message -->
-        <div th:unless="${recentActivity.hasActivity}" style="background: #f8f9fa; padding: 25px; border-radius: 10px; text-align: center;">
+        <div th:if="${recentOrders.empty and recentInquiries.empty and recentReviews.empty}"
+             style="background: #f8f9fa; padding: 25px; border-radius: 10px; text-align: center;">
             <i class="bi bi-info-circle" style="font-size: 2rem; color: #6c757d; margin-bottom: 15px;"></i>
             <h4 style="color: #6c757d;">No Recent Activity</h4>
             <p style="color: #6c757d;">Start browsing advertising solutions to see your activity here!</p>
@@ -283,6 +347,9 @@
             </a>
             <a href="/payment/history" class="btn btn-info">
                 <i class="bi bi-credit-card"></i> Payment History
+            </a>
+            <a href="/reviews/my-reviews" class="btn btn-warning">
+                <i class="bi bi-star"></i> My Reviews
             </a>
         </div>
     </div>

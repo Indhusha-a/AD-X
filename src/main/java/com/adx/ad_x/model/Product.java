@@ -65,6 +65,18 @@ public class Product {
     @Transient
     private Boolean favorited = false;
 
+    // Add this transient field to your Product.java model
+    @Transient
+    private Boolean canReview = false;
+
+    public Boolean getCanReview() {
+        return canReview;
+    }
+
+    public void setCanReview(Boolean canReview) {
+        this.canReview = canReview;
+    }
+
     public Boolean getFavorited() { return favorited; }
     public void setFavorited(Boolean favorited) { this.favorited = favorited; }
 

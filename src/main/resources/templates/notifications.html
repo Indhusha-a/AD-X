@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>AD-X - Notifications</title>
+  <link href="/css/style.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    .notifications-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px 0;
+      text-align: center;
+    }
+    .notification-item {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 15px 0;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      border-left: 4px solid #667eea;
+      transition: all 0.3s ease;
+    }
+    .notification-item.unread {
+      background: #f0f8ff;
+      border-left-color: #007bff;
+    }
+    .notification-item:hover {
+      transform: translateX(5px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+    .notification-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 10px;
+    }
+    .notification-title {
+      flex: 1;
+      font-weight: 600;
+      color: #333;
+    }
+    .notification-time {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+    .notification-message {
+      color: #666;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .notification-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .notification-type {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-right: 10px;
+    }
+    .type-order { background: #e7f3ff; color: #007bff; }
+    .type-payment { background: #e7f8f3; color: #28a745; }
+    .type-review { background: #fff3cd; color: #856404; }
+    .type-inquiry { background: #f8f0fc; color: #6f42c1; }
+    .type-system { background: #f8f9fa; color: #6c757d; }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      margin: 40px 0;
+    }
+    .empty-state i {
+      font-size: 4rem;
+      color: #6c757d;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+<!-- Navigation Header -->
+<nav class="navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">🚀 AD-X</a>
+    <div class="navbar-nav">
+      <!-- FIXED: Use safe navigation to handle null user -->
+      <a th:href="${user?.role == 'BUYER' ? '/buyer/dashboard' : '/seller/dashboard'}"
+         class="btn btn-outline-primary me-2">
+        <i class="bi bi-speedometer"></i> Dashboard
+      </a>
+      <a class="btn btn-secondary" href="/logout">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- Notifications Header -->
+<div class="notifications-header">
+  <div class="container">
+    <h1><i class="bi bi-bell"></i> Notifications</h1>
+    <p>Stay updated with your account activities</p>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Success/Error Messages -->
+  <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+  <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+  <!-- Notifications Actions -->
+  <div class="card fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="margin: 0;">
+        <i class="bi bi-bell"></i> Your Notifications
+        <span th:if="${unreadCount > 0}" class="badge badge-primary" th:text="${unreadCount}"></span>
+      </h3>
+      <div>
+        <form th:action="@{/notifications/mark-all-read}" method="post" style="display: inline;">
+          <button type="submit" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-check-all"></i> Mark All as Read
+          </button>
+        </form>
+        <form th:action="@{/notifications/clear-read}" method="post" style="display: inline; margin-left: 10px;">
+          <button type="submit" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-trash"></i> Clear Read
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div th:if="${not notifications.empty}">
+      <div th:each="notification : ${notifications}"
+           class="notification-item"
+           th:classappend="${not notification.isRead} ? 'unread' : ''">
+
+        <div class="notification-header">
+          <div class="notification-title">
+                        <span class="notification-type"
+                              th:classappend="'type-' + ${notification.type.toLowerCase()}"
+                              th:text="${notification.type}">TYPE</span>
+            <span th:text="${notification.title}">Notification Title</span>
+          </div>
+          <div class="notification-time" th:text="${notification.timeAgo}">2 hours ago</div>
+        </div>
+
+        <div class="notification-message" th:text="${notification.message}">
+          Notification message goes here...
+        </div>
+
+        <div class="notification-actions">
+          <form th:if="${not notification.isRead}"
+                th:action="@{/notifications/mark-read/{id}(id=${notification.id})}"
+                method="post" style="display: inline;">
+            <button type="submit" class="btn btn-outline-success btn-sm">
+              <i class="bi bi-check"></i> Mark Read
+            </button>
+          </form>
+          <form th:action="@{/notifications/delete/{id}(id=${notification.id})}"
+                method="post" style="display: inline;">
+            <button type="submit" class="btn btn-outline-danger btn-sm"
+                    onclick="return confirm('Delete this notification?')">
+              <i class="bi bi-trash"></i> Delete
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${notifications.empty}" class="empty-state">
+      <i class="bi bi-bell-slash"></i>
+      <h3>No Notifications</h3>
+      <p>You're all caught up! New notifications will appear here.</p>
+      <!-- FIXED: Use safe navigation for dashboard link -->
+      <a th:href="${user?.role == 'BUYER' ? '/buyer/dashboard' : '/seller/dashboard'}"
+         class="btn btn-primary">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-content">
+    <p>🚀 <strong>AD-X Advertising Platform</strong> - Notifications Center</p>
+    <p>© 2024 AD-X. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    <p>Notifications | Version 1.0.0</p>
+  </div>
+</footer>
+
+<script>
+  // Auto-refresh notifications every 30 seconds
+  setInterval(() => {
+    fetch('/notifications/unread-count')
+            .then(response => response.json())
+            .then(count => {
+              const badge = document.querySelector('.badge');
+              if (badge && count > 0) {
+                badge.textContent = count;
+              }
+            });
+  }, 30000);
+</script>
+</body>
+</html>

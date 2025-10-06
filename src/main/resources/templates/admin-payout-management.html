@@ -72,19 +72,19 @@
         <h3><i class="bi bi-activity"></i> Payout Overview</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
             <div>
-                <h4 th:text="${payouts.size()}">0</h4>
+                <h4 th:text="${payouts != null ? payouts.size() : 0}">0</h4>
                 <p>Total Payouts</p>
             </div>
             <div>
-                <h4 th:text="${payouts.?[status == 'PENDING'].size()}">0</h4>
+                <h4 th:text="${payouts != null ? payouts.?[status == 'PENDING'].size() : 0}">0</h4>
                 <p>Pending</p>
             </div>
             <div>
-                <h4 th:text="${payouts.?[status == 'COMPLETED'].size()}">0</h4>
+                <h4 th:text="${payouts != null ? payouts.?[status == 'PROCESSED'].size() : 0}">0</h4>
                 <p>Completed</p>
             </div>
             <div>
-                <h4 th:text="${payouts.?[status == 'FAILED'].size()}">0</h4>
+                <h4 th:text="${payouts != null ? payouts.?[status == 'FAILED'].size() : 0}">0</h4>
                 <p>Failed</p>
             </div>
         </div>
@@ -93,9 +93,9 @@
     <!-- Payouts List -->
     <div class="card fade-in">
         <h3><i class="bi bi-list-check"></i> All Payouts</h3>
-        <div th:if="${not payouts.empty}">
+        <div th:if="${payouts != null and not payouts.empty}">
             <div th:each="payout : ${payouts}" class="payout-card fade-in"
-                 th:classappend="${payout.status == 'COMPLETED'} ? 'completed' : (${payout.status == 'FAILED'} ? 'failed' : '')">
+                 th:classappend="${payout.status == 'PROCESSED'} ? 'completed' : (${payout.status == 'FAILED'} ? 'failed' : '')">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                     <div>
                         <h4 style="margin: 0;">Payout #<span th:text="${payout.payoutReference}">PO_123456</span></h4>
@@ -107,7 +107,7 @@
                     </div>
                     <div>
                         <span class="payout-status"
-                              th:classappend="${payout.status == 'COMPLETED'} ? 'status-completed' :
+                              th:classappend="${payout.status == 'PROCESSED'} ? 'status-completed' :
                                              (${payout.status == 'PROCESSING'} ? 'status-processing' :
                                              (${payout.status == 'FAILED'} ? 'status-failed' : 'status-pending'))"
                               th:text="${payout.status}">
@@ -137,8 +137,8 @@
                         <span th:text="'$' + ${#numbers.formatDecimal(payout.transactionFee, 1, 2)}">$1.00</span>
                     </div>
                 </div>
-                <div th:if="${payout.processedDate}" style="font-size: 0.9rem; color: #666;">
-                    Processed: <span th:text="${#temporals.format(payout.processedDate, 'MMM dd, yyyy HH:mm')}">Jan 01, 2024 12:00</span>
+                <div th:if="${payout.processedAt}" style="font-size: 0.9rem; color: #666;">
+                    Processed: <span th:text="${#temporals.format(payout.processedAt, 'MMM dd, yyyy HH:mm')}">Jan 01, 2024 12:00</span>
                 </div>
                 <div th:if="${payout.failureReason}" style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-top: 10px;">
                     <strong>Failure Reason:</strong> <span th:text="${payout.failureReason}">Processing error</span>
@@ -153,7 +153,7 @@
                 </div>
             </div>
         </div>
-        <div th:if="${payouts.empty}" style="text-align: center; padding: 40px; color: #6c757d;">
+        <div th:if="${payouts == null or payouts.empty}" style="text-align: center; padding: 40px; color: #6c757d;">
             <i class="bi bi-cash-coin" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
             <h4>No Payouts Found</h4>
             <p>When sellers request payouts, they will appear here.</p>

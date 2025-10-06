@@ -49,6 +49,73 @@
             padding: 20px;
             margin: 20px 0;
         }
+        .payment-details {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        .payment-details.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        .file-upload {
+            border: 2px dashed #ddd;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+        .file-upload:hover {
+            border-color: #667eea;
+        }
+        .file-upload input {
+            display: none;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: none;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -76,13 +143,23 @@
 </div>
 
 <div class="container">
+    <!-- Success/Error Messages -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
     <!-- Order Summary -->
     <div class="order-summary fade-in">
         <h3><i class="bi bi-receipt"></i> Order Summary</h3>
         <div th:if="${order}">
             <p><strong>Order #:</strong> <span th:text="${order.id}">123</span></p>
             <p><strong>Total Amount:</strong> <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$299.99</span></p>
-            <p><strong>Items:</strong> <span th:text="${order.items.size()}">1</span> item(s)</p>
+            <p><strong>Items:</strong>
+                <span th:each="item : ${order.items}">
+                    <span th:text="${item.product.title}">Product</span>
+                    <span th:if="${item.quantity > 1}" th:text="' (x' + ${item.quantity} + ')'"></span>
+                    <span th:unless="${itemStat.last}">, </span>
+                </span>
+            </p>
         </div>
     </div>
 
@@ -92,6 +169,7 @@
 
         <form th:action="@{/payment/process/{id}(id=${order.id})}" method="post" id="paymentForm">
             <div class="payment-methods">
+                <!-- Credit Card -->
                 <div class="payment-method" onclick="selectPaymentMethod('CREDIT_CARD')">
                     <div class="payment-icon">
                         <i class="bi bi-credit-card"></i>
@@ -101,15 +179,7 @@
                     <input type="radio" name="paymentMethod" value="CREDIT_CARD" style="display: none;">
                 </div>
 
-                <div class="payment-method" onclick="selectPaymentMethod('PAYPAL')">
-                    <div class="payment-icon">
-                        <i class="bi bi-paypal"></i>
-                    </div>
-                    <h4>PayPal</h4>
-                    <p>Pay with your PayPal account</p>
-                    <input type="radio" name="paymentMethod" value="PAYPAL" style="display: none;">
-                </div>
-
+                <!-- Bank Transfer -->
                 <div class="payment-method" onclick="selectPaymentMethod('BANK_TRANSFER')">
                     <div class="payment-icon">
                         <i class="bi bi-bank"></i>
@@ -118,6 +188,80 @@
                     <p>Transfer funds directly from your bank</p>
                     <input type="radio" name="paymentMethod" value="BANK_TRANSFER" style="display: none;">
                 </div>
+
+                <!-- Bank Payment Slip -->
+                <div class="payment-method" onclick="selectPaymentMethod('BANK_SLIP')">
+                    <div class="payment-icon">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                    <h4>Bank Payment Slip</h4>
+                    <p>Upload your payment slip</p>
+                    <input type="radio" name="paymentMethod" value="BANK_SLIP" style="display: none;">
+                </div>
+            </div>
+
+            <!-- Credit Card Details -->
+            <div id="creditCardDetails" class="payment-details">
+                <h4><i class="bi bi-credit-card"></i> Credit Card Information</h4>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="cardNumber">Card Number</label>
+                        <input type="text" id="cardNumber" name="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19"
+                               pattern="[0-9\s]{13,19}" title="Enter a valid 16-digit card number">
+                        <div class="error-message" id="cardNumberError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="expiryDate">Expiry Date</label>
+                        <input type="text" id="expiryDate" name="expiryDate" placeholder="MM/YY" maxlength="5"
+                               pattern="(0[1-9]|1[0-2])\/[0-9]{2}" title="Enter expiry date in MM/YY format">
+                        <div class="error-message" id="expiryDateError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv">CVV</label>
+                        <input type="text" id="cvv" name="cvv" placeholder="123" maxlength="3"
+                               pattern="[0-9]{3}" title="3-digit CVV code">
+                        <div class="error-message" id="cvvError"></div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="cardHolderName">Card Holder Name</label>
+                        <input type="text" id="cardHolderName" name="cardHolderName" placeholder="John Doe" required>
+                        <div class="error-message" id="cardHolderNameError"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Transfer Details - REMOVED: Only payment method field is needed -->
+            <div id="bankTransferDetails" class="payment-details">
+                <h4><i class="bi bi-bank"></i> Bank Transfer Instructions</h4>
+                <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h5 style="color: #007bff; margin-top: 0;">Bank Transfer Details</h5>
+                    <p><strong>Bank Name:</strong> Commercial Bank</p>
+                    <p><strong>Account Name:</strong> AD-X Advertising Platform</p>
+                    <p><strong>Account Number:</strong> 1234 5678 9012</p>
+                    <p><strong>Reference:</strong> <span th:text="'ADX-ORDER-' + ${order.id}">ADX-ORDER-123</span></p>
+                    <p><strong>Amount:</strong> <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$299.99</span></p>
+                </div>
+                <p style="color: #28a745; font-weight: bold;">
+                    <i class="bi bi-info-circle"></i>
+                    Please include the reference number when making the transfer. Your order will be confirmed once payment is received.
+                </p>
+            </div>
+
+            <!-- Bank Slip Details - REMOVED: Only payment method field is needed -->
+            <div id="bankSlipDetails" class="payment-details">
+                <h4><i class="bi bi-file-earmark-text"></i> Bank Payment Slip Instructions</h4>
+                <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h5 style="color: #007bff; margin-top: 0;">Payment Instructions</h5>
+                    <p>1. Visit your bank and make a payment for:</p>
+                    <p style="margin-left: 20px;"><strong>Amount:</strong> <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$299.99</span></p>
+                    <p style="margin-left: 20px;"><strong>Reference:</strong> <span th:text="'ADX-' + ${order.id}">ADX-123</span></p>
+                    <p>2. Keep the payment slip for your records</p>
+                    <p>3. Click "Pay Securely" to confirm your order</p>
+                </div>
+                <p style="color: #28a745; font-weight: bold;">
+                    <i class="bi bi-info-circle"></i>
+                    Your order will be processed once payment is verified by our team.
+                </p>
             </div>
 
             <!-- Security Notice -->
@@ -167,8 +311,51 @@
         selectedMethod = method;
         document.querySelector('input[name="paymentMethod"][value="' + method + '"]').checked = true;
 
+        // Hide all payment details
+        document.querySelectorAll('.payment-details').forEach(el => {
+            el.classList.remove('active');
+        });
+
+        // Show relevant payment details
+        if (method === 'CREDIT_CARD') {
+            document.getElementById('creditCardDetails').classList.add('active');
+        } else if (method === 'BANK_TRANSFER') {
+            document.getElementById('bankTransferDetails').classList.add('active');
+        } else if (method === 'BANK_SLIP') {
+            document.getElementById('bankSlipDetails').classList.add('active');
+        }
+
         // Enable pay button
         document.getElementById('payButton').disabled = false;
+    }
+
+    function updateFileName(input) {
+        const fileNameDiv = document.getElementById('fileName');
+        if (input.files.length > 0) {
+            fileNameDiv.textContent = 'Selected file: ' + input.files[0].name;
+        } else {
+            fileNameDiv.textContent = '';
+        }
+    }
+
+    // Validate expiry date
+    function validateExpiryDate(expiryDate) {
+        const [month, year] = expiryDate.split('/');
+        if (!month || !year) return false;
+
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear() % 100; // Get last 2 digits
+        const currentMonth = currentDate.getMonth() + 1; // Months are 0-indexed
+
+        const expMonth = parseInt(month);
+        const expYear = parseInt(year);
+
+        // Check if expiry date is in the future
+        if (expYear < currentYear) return false;
+        if (expYear === currentYear && expMonth < currentMonth) return false;
+        if (expMonth < 1 || expMonth > 12) return false;
+
+        return true;
     }
 
     // Form submission handler
@@ -179,10 +366,116 @@
             return false;
         }
 
+        // Clear previous errors
+        document.querySelectorAll('.error-message').forEach(el => {
+            el.style.display = 'none';
+            el.textContent = '';
+        });
+
+        let isValid = true;
+
+        // Validation based on selected method
+        if (selectedMethod === 'CREDIT_CARD') {
+            const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+            const expiryDate = document.getElementById('expiryDate').value;
+            const cvv = document.getElementById('cvv').value;
+            const cardHolderName = document.getElementById('cardHolderName').value;
+
+            // Card number validation (basic Luhn check)
+            if (!cardNumber || cardNumber.length < 13 || cardNumber.length > 19) {
+                document.getElementById('cardNumberError').textContent = 'Please enter a valid card number';
+                document.getElementById('cardNumberError').style.display = 'block';
+                isValid = false;
+            }
+
+            // Expiry date validation
+            if (!expiryDate || !/^(0[1-9]|1[0-2])\/[0-9]{2}$/.test(expiryDate)) {
+                document.getElementById('expiryDateError').textContent = 'Please enter a valid expiry date (MM/YY)';
+                document.getElementById('expiryDateError').style.display = 'block';
+                isValid = false;
+            } else if (!validateExpiryDate(expiryDate)) {
+                document.getElementById('expiryDateError').textContent = 'This card has expired. Please use a valid card.';
+                document.getElementById('expiryDateError').style.display = 'block';
+                isValid = false;
+            }
+
+            // CVV validation
+            if (!cvv || cvv.length !== 3 || !/^[0-9]{3}$/.test(cvv)) {
+                document.getElementById('cvvError').textContent = 'Please enter a valid 3-digit CVV';
+                document.getElementById('cvvError').style.display = 'block';
+                isValid = false;
+            }
+
+            // Card holder name validation
+            if (!cardHolderName || cardHolderName.trim().length < 2) {
+                document.getElementById('cardHolderNameError').textContent = 'Please enter card holder name';
+                document.getElementById('cardHolderNameError').style.display = 'block';
+                isValid = false;
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                return false;
+            }
+        }
+
+        // For bank transfer and bank slip, no additional validation needed
+        // since the PaymentController only requires paymentMethod
+
         // Show loading state
         const button = document.getElementById('payButton');
         button.innerHTML = '<i class="bi bi-arrow-repeat spinner"></i> Processing Payment...';
         button.disabled = true;
+
+        return true;
+    });
+
+    // Format card number with spaces
+    document.getElementById('cardNumber')?.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+        let formattedValue = '';
+
+        for (let i = 0; i < value.length; i++) {
+            if (i > 0 && i % 4 === 0) {
+                formattedValue += ' ';
+            }
+            formattedValue += value[i];
+        }
+
+        e.target.value = formattedValue;
+    });
+
+    // Format expiry date and validate in real-time
+    document.getElementById('expiryDate')?.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 2) {
+            value = value.substring(0, 2) + '/' + value.substring(2, 4);
+        }
+        e.target.value = value;
+
+        // Real-time expiry validation
+        const errorElement = document.getElementById('expiryDateError');
+        if (value.length === 5) {
+            if (!validateExpiryDate(value)) {
+                errorElement.textContent = 'This card has expired. Please use a valid card.';
+                errorElement.style.display = 'block';
+            } else {
+                errorElement.style.display = 'none';
+            }
+        } else {
+            errorElement.style.display = 'none';
+        }
+    });
+
+    // Real-time CVV validation
+    document.getElementById('cvv')?.addEventListener('input', function(e) {
+        const errorElement = document.getElementById('cvvError');
+        if (e.target.value.length === 3 && !/^[0-9]{3}$/.test(e.target.value)) {
+            errorElement.textContent = 'Please enter a valid 3-digit CVV';
+            errorElement.style.display = 'block';
+        } else {
+            errorElement.style.display = 'none';
+        }
     });
 </script>
 </body>
