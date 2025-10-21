@@ -4,6 +4,7 @@ import com.adx.ad_x.model.Payment;
 import com.adx.ad_x.model.User;
 import com.adx.ad_x.model.Order;
 import com.adx.ad_x.repository.PaymentRepository;
+import com.adx.ad_x.designpatterns.strategy.PaymentStrategyContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,21 +13,31 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+
 @Service
 public class PaymentService {
 
     @Autowired
     private PaymentRepository paymentRepository;
 
-    // Process payment
+    @Autowired
+    private PaymentStrategyContext paymentStrategyContext; // DESIGN PATTERN: Strategy Pattern
+
+    // Process payment - USES STRATEGY PATTERN
     public Payment processPayment(Order order, String paymentMethod, String transactionId) {
         Payment payment = new Payment();
         payment.setOrder(order);
         payment.setBuyer(order.getBuyer());
         payment.setAmount(order.getTotalAmount());
-        payment.setPaymentMethod(paymentMethod);
         payment.setTransactionId(transactionId);
-        payment.setStatus("COMPLETED");
+
+        // DESIGN PATTERN: Strategy Pattern processes payment based on method
+        boolean success = paymentStrategyContext.executePayment(payment, paymentMethod);
+        
+        if (!success) {
+            payment.setStatus("FAILED");
+        }
+        // Note: Strategy already sets status to COMPLETED and paymentMethod
 
         return paymentRepository.save(payment);
     }

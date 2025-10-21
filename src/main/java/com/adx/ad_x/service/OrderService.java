@@ -4,6 +4,7 @@ import com.adx.ad_x.model.*;
 import com.adx.ad_x.repository.OrderRepository;
 import com.adx.ad_x.repository.ProductRepository;
 import com.adx.ad_x.repository.UserRepository;
+import com.adx.ad_x.designpatterns.observer.OrderEventPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
 
 @Service
 public class OrderService {
@@ -27,6 +29,9 @@ public class OrderService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private OrderEventPublisher orderEventPublisher; // DESIGN PATTERN: Observer Pattern
 
     // Create a single product order
     public Order createSingleOrder(User buyer, Product product) {
@@ -51,6 +56,9 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
 
         Order savedOrder = orderRepository.save(order);
+
+        // DESIGN PATTERN: Observer Pattern - notify observers of order creation
+        orderEventPublisher.notifyObservers("ORDER_CREATED", savedOrder);
 
         // Create notification for buyer
         notificationService.createOrderNotificationForBuyer(
@@ -131,6 +139,13 @@ public class OrderService {
             order.setStatus(status);
             orderRepository.save(order);
 
+            // DESIGN PATTERN: Observer Pattern - notify observers of status change
+            if ("CONFIRMED".equals(status)) {
+                orderEventPublisher.notifyObservers("ORDER_CONFIRMED", order);
+            } else if ("CANCELLED".equals(status)) {
+                orderEventPublisher.notifyObservers("ORDER_CANCELLED", order);
+            }
+
             // Create notification for buyer
             notificationService.createOrderNotificationForBuyer(
                     order,
@@ -152,6 +167,15 @@ public class OrderService {
             Order order = orderOpt.get();
             order.setStatus(status);
             orderRepository.save(order);
+
+            // DESIGN PATTERN: Observer Pattern - notify observers of status change
+            if ("CONFIRMED".equals(status)) {
+                orderEventPublisher.notifyObservers("ORDER_CONFIRMED", order);
+            } else if ("COMPLETED".equals(status)) {
+                orderEventPublisher.notifyObservers("ORDER_COMPLETED", order);
+            } else if ("CANCELLED".equals(status)) {
+                orderEventPublisher.notifyObservers("ORDER_CANCELLED", order);
+            }
 
             // Create notification for buyer
             notificationService.createOrderNotificationForBuyer(
@@ -194,6 +218,9 @@ public class OrderService {
 
             order.setStatus("CANCELLED");
             orderRepository.save(order);
+
+            // DESIGN PATTERN: Observer Pattern - notify observers
+            orderEventPublisher.notifyObservers("ORDER_CANCELLED", order);
 
             notificationService.createOrderNotificationForBuyer(
                     order,

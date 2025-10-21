@@ -84,8 +84,9 @@ public class PaymentController {
                 // Process payment
                 Payment payment = paymentService.processPayment(order, paymentMethod, transactionId);
 
-                // Update order status
-                orderService.updateOrderStatus(orderId, "CONFIRMED");
+                // DO NOT auto-confirm order - let seller confirm it manually
+                // Order status remains PENDING until seller confirms
+                // orderService.updateOrderStatus(orderId, "CONFIRMED");
 
                 // Create notification
                 notificationService.createNotification(user,
@@ -95,8 +96,11 @@ public class PaymentController {
                         payment.getId(),
                         "PAYMENT");
 
-                model.addAttribute("success", "Payment processed successfully! Your order is now confirmed.");
-                return "redirect:/buyer/purchases";
+                // Redirect to payment success page with payment details
+                model.addAttribute("payment", payment);
+                model.addAttribute("order", order);
+                model.addAttribute("pageTitle", "AD-X - Payment Successful");
+                return "payment-success";
 
             } catch (Exception e) {
                 model.addAttribute("error", "Payment processing failed: " + e.getMessage());

@@ -97,14 +97,33 @@ public class AdminController {
         return "redirect:/admin/dashboard";
     }
 
-    // Delete user
+    // Delete user - FIXED: Added error handling to prevent white label errors
     @GetMapping("/delete/{id}")
-    public String deleteUser(@PathVariable Long id, HttpSession session) {
+    public String deleteUser(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
         if (!isAdmin(session)) {
             return "redirect:/admin/login";
         }
 
-        userService.deleteUser(id);
+        try {
+            // Check if user exists
+            Optional<User> userOpt = userService.getUserById(id);
+            if (userOpt.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "User not found");
+                return "redirect:/admin/dashboard";
+            }
+
+            User currentUser = (User) session.getAttribute("user");
+            if (currentUser.getId().equals(id)) {
+                redirectAttributes.addFlashAttribute("error", "You cannot delete your own account");
+                return "redirect:/admin/dashboard";
+            }
+
+            userService.deleteUser(id);
+            redirectAttributes.addFlashAttribute("success", "User deleted successfully");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error deleting user: " + e.getMessage());
+        }
+
         return "redirect:/admin/dashboard";
     }
 

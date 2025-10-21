@@ -2,11 +2,13 @@ package com.adx.ad_x.service;
 
 import com.adx.ad_x.model.*;
 import com.adx.ad_x.repository.NotificationRepository;
+import com.adx.ad_x.designpatterns.factory.NotificationFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // ADD THIS IMPORT
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
 
 @Service
 public class NotificationService {
@@ -14,16 +16,21 @@ public class NotificationService {
     @Autowired
     private NotificationRepository notificationRepository;
 
-    // Create a notification
+    @Autowired
+    private NotificationFactory notificationFactory; // DESIGN PATTERN: Factory Pattern
+
+    // Create a notification - USES FACTORY PATTERN
     public Notification createNotification(User user, String title, String message, String type) {
-        Notification notification = new Notification(user, title, message, type);
-        return notificationRepository.save(notification);
+        return createNotification(user, title, message, type, null, null);
     }
 
-    // Create a notification with related entity
+    // Create a notification with related entity - USES FACTORY PATTERN
     public Notification createNotification(User user, String title, String message, String type,
                                            Long relatedEntityId, String relatedEntityType) {
-        Notification notification = new Notification(user, title, message, type, relatedEntityId, relatedEntityType);
+        // DESIGN PATTERN: Factory Pattern creates the notification
+        Notification notification = notificationFactory.createNotification(
+            type, user, title, message, relatedEntityId, relatedEntityType
+        );
         return notificationRepository.save(notification);
     }
 

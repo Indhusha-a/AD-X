@@ -139,6 +139,9 @@
     <div class="container">
         <h1><i class="bi bi-credit-card"></i> Complete Your Purchase</h1>
         <p>Select your preferred payment method</p>
+        <p style="font-size: 0.9rem; opacity: 0.9; margin-top: 10px;">
+            <i class="bi bi-gear"></i> Using Strategy Pattern - Each payment method uses a different processing strategy
+        </p>
     </div>
 </div>
 
@@ -170,7 +173,7 @@
         <form th:action="@{/payment/process/{id}(id=${order.id})}" method="post" id="paymentForm">
             <div class="payment-methods">
                 <!-- Credit Card -->
-                <div class="payment-method" onclick="selectPaymentMethod('CREDIT_CARD')">
+                <div class="payment-method" onclick="selectPaymentMethod(event, 'CREDIT_CARD')">
                     <div class="payment-icon">
                         <i class="bi bi-credit-card"></i>
                     </div>
@@ -180,7 +183,7 @@
                 </div>
 
                 <!-- Bank Transfer -->
-                <div class="payment-method" onclick="selectPaymentMethod('BANK_TRANSFER')">
+                <div class="payment-method" onclick="selectPaymentMethod(event, 'BANK_TRANSFER')">
                     <div class="payment-icon">
                         <i class="bi bi-bank"></i>
                     </div>
@@ -190,7 +193,7 @@
                 </div>
 
                 <!-- Bank Payment Slip -->
-                <div class="payment-method" onclick="selectPaymentMethod('BANK_SLIP')">
+                <div class="payment-method" onclick="selectPaymentMethod(event, 'BANK_SLIP')">
                     <div class="payment-icon">
                         <i class="bi bi-file-earmark-text"></i>
                     </div>
@@ -224,7 +227,7 @@
                     </div>
                     <div class="form-group full-width">
                         <label for="cardHolderName">Card Holder Name</label>
-                        <input type="text" id="cardHolderName" name="cardHolderName" placeholder="John Doe" required>
+                        <input type="text" id="cardHolderName" name="cardHolderName" placeholder="John Doe">
                         <div class="error-message" id="cardHolderNameError"></div>
                     </div>
                 </div>
@@ -299,7 +302,7 @@
 <script>
     let selectedMethod = null;
 
-    function selectPaymentMethod(method) {
+    function selectPaymentMethod(event, method) {
         // Remove selected class from all methods
         document.querySelectorAll('.payment-method').forEach(el => {
             el.classList.remove('selected');
@@ -320,14 +323,33 @@
         // Show relevant payment details
         if (method === 'CREDIT_CARD') {
             document.getElementById('creditCardDetails').classList.add('active');
+            // Make credit card fields required when credit card is selected
+            document.getElementById('cardNumber').setAttribute('required', 'required');
+            document.getElementById('expiryDate').setAttribute('required', 'required');
+            document.getElementById('cvv').setAttribute('required', 'required');
+            document.getElementById('cardHolderName').setAttribute('required', 'required');
         } else if (method === 'BANK_TRANSFER') {
             document.getElementById('bankTransferDetails').classList.add('active');
+            // Remove required from credit card fields
+            document.getElementById('cardNumber').removeAttribute('required');
+            document.getElementById('expiryDate').removeAttribute('required');
+            document.getElementById('cvv').removeAttribute('required');
+            document.getElementById('cardHolderName').removeAttribute('required');
         } else if (method === 'BANK_SLIP') {
             document.getElementById('bankSlipDetails').classList.add('active');
+            // Remove required from credit card fields
+            document.getElementById('cardNumber').removeAttribute('required');
+            document.getElementById('expiryDate').removeAttribute('required');
+            document.getElementById('cvv').removeAttribute('required');
+            document.getElementById('cardHolderName').removeAttribute('required');
         }
 
         // Enable pay button
         document.getElementById('payButton').disabled = false;
+        
+        // Add visual feedback
+        console.log('Payment method selected:', method);
+        console.log('Pay button disabled status:', document.getElementById('payButton').disabled);
     }
 
     function updateFileName(input) {

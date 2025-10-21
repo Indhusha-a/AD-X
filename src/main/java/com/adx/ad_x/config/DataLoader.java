@@ -2,6 +2,7 @@ package com.adx.ad_x.config;
 
 import com.adx.ad_x.model.*;
 import com.adx.ad_x.repository.*;
+import com.adx.ad_x.designpatterns.observer.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -39,8 +40,20 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private FinancialTransactionRepository financialTransactionRepository;
 
+    @Autowired
+    private OrderEventPublisher orderEventPublisher;
+
+    @Autowired
+    private NotificationObserver notificationObserver;
+
+    @Autowired
+    private AnalyticsObserver analyticsObserver;
+
     @Override
     public void run(String... args) throws Exception {
+        // Initialize Design Patterns - Register observers
+        initializeDesignPatterns();
+
         // Create default admin user if not exists
         if (userRepository.findByEmail("admin@adx.com").isEmpty()) {
             User admin = new User();
@@ -187,6 +200,28 @@ public class DataLoader implements CommandLineRunner {
 
             System.out.println("Second seller created: sarah@marketingpros.com / seller123");
         }
+    }
+
+    /**
+     * Initialize Design Patterns
+     * Registers observers for the Observer Pattern
+     */
+    private void initializeDesignPatterns() {
+        System.out.println("\n========================================");
+        System.out.println("🎨 DESIGN PATTERNS INITIALIZED");
+        System.out.println("========================================\n");
+
+        // OBSERVER PATTERN: Register observers to listen to order events
+        orderEventPublisher.registerObserver(notificationObserver);
+        orderEventPublisher.registerObserver(analyticsObserver);
+
+        System.out.println("✅ Pattern #1: Factory - NotificationFactory integrated in NotificationService");
+        System.out.println("✅ Pattern #2: Strategy - PaymentStrategy integrated in PaymentService");
+        System.out.println("✅ Pattern #3: Observer - OrderEventPublisher with 2 observers registered");
+
+        System.out.println("\n========================================");
+        System.out.println("All 3 Design Patterns are active! 🚀");
+        System.out.println("========================================\n");
     }
 
     private void createSampleOrders(User buyer, User seller) {

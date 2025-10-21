@@ -108,6 +108,15 @@
 </nav>
 
 <div class="container">
+  <!-- Flash Messages -->
+  <div th:if="${success}" class="alert alert-success" role="alert">
+    <i class="bi bi-check-circle"></i> <span th:text="${success}"></span>
+  </div>
+  
+  <div th:if="${error}" class="alert alert-danger" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> <span th:text="${error}"></span>
+  </div>
+
   <div class="dashboard-header">
     <h1><i class="bi bi-speedometer2"></i> Admin Dashboard</h1>
     <p>System Administration & User Management</p>
